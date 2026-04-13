@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ownedTasks      Task[]           @relation("TaskOwner")
+  assignedTasks   Task[]           @relation("TaskAssignee")
+  comments        Comment[]
+  abTests         ABTest[]
+  projects        Project[]
+  createdTeams    Team[]           @relation("TeamCreator")
+  teamMemberships TeamMember[]
+  settings        UserSettings?
+  attachments     TaskAttachment[]
+}
+
+model UserSettings {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  jiraDomain  String?
+  jiraEmail   String?
+  jiraToken   String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  createdById String
+  createdAt   DateTime @default(now())
+
+  createdBy User       @relation("TeamCreator", fields: [createdById], references: [id])
+  members   TeamMember[]
+  tasks     Task[]
+  abTests   ABTest[]
+  projects  Project[]
+}
+
+model TeamMember {
+  id       String   @id @default(cuid())
+  teamId   String
+  userId   String
+  role     String   @default("member")
+  joinedAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  priority    String    @default("medium")
+  status      String    @default("todo")
+  dueDate     DateTime?
+  tags        String    @default("[]")
+  ownerId     String
+  assigneeId  String?
+  teamId      String?
+  projectId   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner       User             @relation("TaskOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  assignee    User?            @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  team        Team?            @relation(fields: [teamId], references: [id])
+  project     Project?         @relation(fields: [projectId], references: [id])
+  comments    Comment[]
+  attachments TaskAttachment[]
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  body      String
+  taskId    String
+  authorId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model TaskAttachment {
+  id           String   @id @default(cuid())
+  taskId       String
+  filename     String
+  storedName   String
+  url          String
+  mimeType     String
+  size         Int
+  uploadedById String
+  createdAt    DateTime @default(now())
+
+  task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  url         String?
+  ownerId     String
+  teamId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  team         Team?         @relation(fields: [teamId], references: [id])
+  abTests      ABTest[]
+  roadmapItems RoadmapItem[]
+  tasks        Task[]
+}
+
+model RoadmapItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  phase       String?
+  status      String   @default("planned")
+  order       Int      @default(0)
+  projectId   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ABTest {
+  id          String    @id @default(cuid())
+  name        String
+  hypothesis  String
+  status      String    @default("draft")
+  ownerId     String
+  teamId      String?
+  projectId   String?
+  startedAt   DateTime?
+  concludedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  owner    User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  team     Team?       @relation(fields: [teamId], references: [id])
+  project  Project?    @relation(fields: [projectId], references: [id])
+  variants ABVariant[]
+}
+
+model ABVariant {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  testId      String
+  createdAt   DateTime @default(now())
+
+  test    ABTest     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  metrics ABMetric[]
+}
+
+model ABMetric {
+  id         String   @id @default(cuid())
+  variantId  String
+  metricName String
+  value      Float
+  recordedAt DateTime @default(now())
+  notes      String?
+
+  variant ABVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+}
