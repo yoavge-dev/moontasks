@@ -19,7 +19,32 @@
       "Bash(xcode-select -p)",
       "Bash(git --version)",
       "Bash(clang --version)",
-      "Bash(cp:*)"
+      "Bash(cp:*)",
+      "Bash(openssl rand:*)",
+      "Bash(mkdir -p \"/Users/yoavgersi/New project - task management/src/app/\\(app\\)/tasks/[taskId]\")",
+      "Bash(mkdir -p \"/Users/yoavgersi/New project - task management/src/app/\\(app\\)/team/[teamId]\")",
+      "Bash(mkdir -p \"/Users/yoavgersi/New project - task management/src/app/\\(app\\)/ab-tests/[testId]\")",
+      "Bash(mkdir -p \"/Users/yoavgersi/New project - task management/src/app/api/ab-tests/[testId]/variants\")",
+      "Bash(mkdir -p \"/Users/yoavgersi/New project - task management/src/app/api/ab-tests/[testId]/metrics\")",
+      "Bash(xargs sed:*)",
+      "Bash(curl -sI http://localhost:3000/login)",
+      "Bash(curl -sI http://localhost:3000/dashboard)",
+      "Bash(curl -sI http://localhost:3000/)",
+      "Bash(npx prisma:*)",
+      "Bash(node node_modules/.bin/prisma migrate dev --name add_projects_roadmap)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/ab-tests/projects)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/ab-tests/projects/new)",
+      "Bash(lsof -i :3000 -sTCP:LISTEN)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\({**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}, indent=2\\)\\)\")",
+      "Bash(npm install:*)",
+      "Bash(bun add:*)",
+      "Bash(export PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\")",
+      "Bash(ls /usr/local/bin/node* /opt/homebrew/bin/node* ~/.nvm/versions/*/bin/npm)",
+      "Bash(command -v node)",
+      "Bash(/Users/yoavgersi/.nvm/versions/node/v24.14.1/bin/npm install:*)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
+      "Bash(python3:*)",
+      "Bash(brew install:*)"
     ]
   }
 }
