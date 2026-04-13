@@ -43,7 +43,7 @@ export default function NewProjectPage() {
           <CardTitle className="text-base">Project details</CardTitle>
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pb-2">
             <div className="space-y-1">
               <Label htmlFor="name">Name *</Label>
               <Input

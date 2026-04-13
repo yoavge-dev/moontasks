@@ -123,7 +123,7 @@ export function TopNav() {
         </Link>
 
         <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="ghost" className="h-auto px-2 py-1.5 gap-2 font-normal" />}>
+          <DropdownMenuTrigger className="flex items-center gap-2 h-auto px-2 py-1.5 rounded-lg font-normal hover:bg-muted transition-colors outline-none">
             <AvatarCircle name={user?.name} email={user?.email} />
             <div className="hidden sm:block text-left leading-tight">
               <p className="text-xs font-semibold text-foreground">{user?.name ?? "Account"}</p>
