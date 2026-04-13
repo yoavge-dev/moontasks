@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -v \"^\\\\.$\")",
+      "Bash(grep -v \"^\\\\.\\\\.$\")",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --app --src-dir --no-eslint --no-import-alias --yes)",
+      "Read(//usr/local/bin/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(command -v npx)",
+      "Read(//Users/yoavgersi/.nvm/versions/**)",
+      "Read(//opt/homebrew/**)",
+      "Read(//Users/yoavgersi/.volta/**)",
+      "Read(//Users/yoavgersi/**)",
+      "Read(//usr/local/**)",
+      "Bash(curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh)",
+      "Bash(bash)",
+      "Bash(xcode-select --install)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(xcode-select -p)",
+      "Bash(git --version)",
+      "Bash(clang --version)",
+      "Bash(cp:*)"
+    ]
+  }
+}
