@@ -15,12 +15,7 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const userId = (session.user as { id: string }).id;
-  const memberships = await prisma.teamMember.findMany({ where: { userId }, select: { teamId: true } });
-  const teamIds = memberships.map((m) => m.teamId);
-
   const projects = await prisma.project.findMany({
-    where: { OR: [{ ownerId: userId }, { teamId: { in: teamIds } }] },
     include: {
       owner: { select: { id: true, name: true, email: true } },
       team: { select: { id: true, name: true } },

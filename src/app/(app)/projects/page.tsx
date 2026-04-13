@@ -15,11 +15,7 @@ export default async function ProjectsPage() {
 
   const userId = (session.user as { id: string }).id;
 
-  const memberships = await prisma.teamMember.findMany({ where: { userId }, select: { teamId: true } });
-  const teamIds = memberships.map((m) => m.teamId);
-
   const projects = await prisma.project.findMany({
-    where: { OR: [{ ownerId: userId }, { teamId: { in: teamIds } }] },
     include: {
       team: { select: { id: true, name: true } },
       _count: { select: { abTests: true, roadmapItems: true, tasks: true } },

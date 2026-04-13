@@ -32,11 +32,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ project
 
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const memberships = await prisma.teamMember.findMany({ where: { userId }, select: { teamId: true } });
-  const teamIds = memberships.map((m) => m.teamId);
-  const canAccess = project.ownerId === userId || (project.teamId && teamIds.includes(project.teamId));
-  if (!canAccess) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-
   return NextResponse.json({ data: project });
 }
 
