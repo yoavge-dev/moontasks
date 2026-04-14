@@ -44,7 +44,7 @@ export async function GET() {
   const oldest = Math.floor((Date.now() - 24 * 60 * 60 * 1000) / 1000).toString();
 
   const histRes = await fetch(
-    `https://slack.com/api/conversations.history?channel=${slackChannelId}&oldest=${oldest}&limit=100`,
+    `https://slack.com/api/conversations.history?channel=${slackChannelId}&oldest=${oldest}&limit=100&inclusive=true`,
     { headers: { Authorization: `Bearer ${slackToken}` } }
   );
   const histJson = await histRes.json();

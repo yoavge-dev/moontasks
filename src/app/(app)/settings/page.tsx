@@ -342,7 +342,7 @@ export default function SettingsPage() {
                       </li>
                       <li className="flex gap-2">
                         <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">2</span>
-                        <span>Go to <strong className="text-foreground">OAuth & Permissions</strong> → add scopes: <code className="bg-muted px-1 rounded">channels:history</code>, <code className="bg-muted px-1 rounded">channels:read</code>, <code className="bg-muted px-1 rounded">groups:history</code>, <code className="bg-muted px-1 rounded">groups:read</code>, <code className="bg-muted px-1 rounded">users:read</code></span>
+                        <span>Go to <strong className="text-foreground">OAuth & Permissions</strong> → add scopes: <code className="bg-muted px-1 rounded">channels:history</code>, <code className="bg-muted px-1 rounded">channels:read</code>, <code className="bg-muted px-1 rounded">groups:history</code>, <code className="bg-muted px-1 rounded">groups:read</code>, <code className="bg-muted px-1 rounded">mpim:history</code>, <code className="bg-muted px-1 rounded">mpim:read</code>, <code className="bg-muted px-1 rounded">users:read</code></span>
                       </li>
                       <li className="flex gap-2">
                         <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">3</span>

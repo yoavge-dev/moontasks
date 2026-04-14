@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (!token) return NextResponse.json({ error: "Token required" }, { status: 400 });
 
   const res = await fetch(
-    "https://slack.com/api/conversations.list?types=public_channel,private_channel&exclude_archived=true&limit=200",
+    "https://slack.com/api/conversations.list?types=public_channel,private_channel,mpim&exclude_archived=true&limit=200",
     { headers: { Authorization: `Bearer ${token}` } }
   );
 
