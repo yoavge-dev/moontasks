@@ -1,0 +1,56 @@
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { z } from "zod";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  const settings = await prisma.userSettings.findUnique({ where: { userId } });
+
+  return NextResponse.json({
+    data: {
+      connected: !!(settings?.slackToken && settings?.slackChannelId),
+      channelId: settings?.slackChannelId ?? null,
+    },
+  });
+}
+
+const Schema = z.object({
+  slackToken: z.string().min(1, "Bot token is required"),
+  slackChannelId: z.string().min(1, "Channel is required"),
+});
+
+export async function PUT(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  const body = await req.json();
+  const parsed = Schema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
+
+  await prisma.userSettings.upsert({
+    where: { userId },
+    create: { userId, slackToken: parsed.data.slackToken, slackChannelId: parsed.data.slackChannelId },
+    update: { slackToken: parsed.data.slackToken, slackChannelId: parsed.data.slackChannelId },
+  });
+
+  return NextResponse.json({ data: { connected: true } });
+}
+
+export async function DELETE() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  await prisma.userSettings.updateMany({
+    where: { userId },
+    data: { slackToken: null, slackChannelId: null },
+  });
+
+  return NextResponse.json({ data: null });
+}

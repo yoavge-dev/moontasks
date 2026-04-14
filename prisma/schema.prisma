@@ -31,12 +31,14 @@ model User {
 }
 
 model UserSettings {
-  id         String  @id @default(cuid())
-  userId     String  @unique
-  jiraDomain  String?
-  jiraEmail   String?
-  jiraToken   String?
-  calendarUrl String?
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  jiraDomain     String?
+  jiraEmail      String?
+  jiraToken      String?
+  calendarUrl    String?
+  slackToken     String?
+  slackChannelId String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
