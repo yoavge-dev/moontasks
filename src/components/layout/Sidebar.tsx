@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "My Tasks", icon: CheckSquare },
-  { href: "/weekly-summary", label: "Weekly Summary", icon: ClipboardList },
   { href: "/team", label: "Team", icon: Users },
   { href: "/projects", label: "Projects", icon: FolderKanban },
 ];
