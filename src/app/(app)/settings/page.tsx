@@ -274,7 +274,7 @@ export default function SettingsPage() {
                   <Input
                     id="slackToken"
                     type="password"
-                    placeholder="xoxb-..."
+                    placeholder="Paste your bot token (xoxb-...)"
                     value={slackToken}
                     onChange={(e) => { setSlackToken(e.target.value); setSlackChannels([]); setSlackChannelId(""); }}
                   />
