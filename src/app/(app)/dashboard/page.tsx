@@ -11,6 +11,7 @@ import { JiraDashboardPanel, JiraStatCard } from "@/components/dashboard/JiraDas
 import { JiraSetupBanner } from "@/components/dashboard/JiraSetupBanner";
 import { CheckSquare, Clock, FlaskConical, Users, Plus, PartyPopper } from "lucide-react";
 import { format, isToday } from "date-fns";
+import { Greeting } from "@/components/dashboard/Greeting";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -55,18 +56,10 @@ export default async function DashboardPage() {
     { label: "Teams", value: memberships, icon: Users, href: "/team", iconBg: "bg-violet-100 dark:bg-violet-900/30", iconColor: "text-violet-600 dark:text-violet-400", accent: "border-t-violet-400" },
   ];
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {greeting}, {session.user.name?.split(" ")[0] ?? "there"}
-          </h1>
-          <p className="text-muted-foreground text-sm mt-1">{format(new Date(), "EEEE, MMMM d, yyyy")}</p>
-        </div>
+        <Greeting name={session.user.name?.split(" ")[0] ?? "there"} />
         <LinkButton href="/tasks/new">
           <Plus className="h-4 w-4 mr-2" />
           New Task
