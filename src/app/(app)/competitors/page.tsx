@@ -254,7 +254,7 @@ export default function CompetitorsPage() {
                         </a>
                         <span className="ml-auto shrink-0">
                           {isPending ? (
-                            <Badge variant="secondary" className="text-[10px]">Scanning…</Badge>
+                            <Badge variant="secondary" className="text-[10px]">Setting up</Badge>
                           ) : latest.hasChanges ? (
                             <Badge variant="secondary" className="text-amber-600 bg-amber-100 border-amber-200 text-[10px]">
                               Changes detected
@@ -269,7 +269,7 @@ export default function CompetitorsPage() {
 
                       {isPending && (
                         <p className="text-xs text-muted-foreground mt-1">
-                          Taking baseline snapshot — changes will be tracked from the next daily check.
+                          Reading the current site — this is your baseline. Daily checks start tomorrow at 10am.
                         </p>
                       )}
 
