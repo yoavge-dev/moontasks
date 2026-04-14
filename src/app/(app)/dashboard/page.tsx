@@ -9,6 +9,7 @@ import { TaskStatusBadge } from "@/components/tasks/TaskStatusBadge";
 import { TaskPriorityBadge } from "@/components/tasks/TaskPriorityBadge";
 import { JiraDashboardPanel, JiraStatCard } from "@/components/dashboard/JiraDashboardPanel";
 import { JiraSetupBanner } from "@/components/dashboard/JiraSetupBanner";
+import { CalendarWidget } from "@/components/dashboard/CalendarWidget";
 import { CheckSquare, Clock, FlaskConical, Users, Plus, PartyPopper } from "lucide-react";
 import { format, isToday } from "date-fns";
 
@@ -47,6 +48,7 @@ export default async function DashboardPage() {
     ]);
 
   const hasJira = !!(userSettings?.jiraDomain && userSettings?.jiraEmail && userSettings?.jiraToken);
+  const hasCalendar = !!userSettings?.calendarUrl;
 
   const stats = [
     { label: "Open Tasks", value: openTaskCount, icon: CheckSquare, href: "/tasks", iconBg: "bg-sky-100 dark:bg-sky-900/30", iconColor: "text-sky-600 dark:text-sky-400", accent: "border-t-sky-400" },
@@ -95,7 +97,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Panels */}
-      <div className={`grid gap-6 ${hasJira ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+      <div className={`grid gap-6 ${(hasJira && hasCalendar) ? "lg:grid-cols-4" : (hasJira || hasCalendar) ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
         {/* Due Today */}
         <Card>
           <CardHeader className="pb-3">
@@ -161,6 +163,9 @@ export default async function DashboardPage() {
 
         {/* Jira panel — only renders if connected */}
         {hasJira && <JiraDashboardPanel />}
+
+        {/* Calendar widget — only renders if connected */}
+        {hasCalendar && <CalendarWidget />}
       </div>
     </div>
   );

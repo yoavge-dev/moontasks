@@ -33,9 +33,10 @@ model User {
 model UserSettings {
   id         String  @id @default(cuid())
   userId     String  @unique
-  jiraDomain String?
-  jiraEmail  String?
-  jiraToken  String?
+  jiraDomain  String?
+  jiraEmail   String?
+  jiraToken   String?
+  calendarUrl String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
