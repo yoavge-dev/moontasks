@@ -205,15 +205,40 @@ export function RoadmapColumns({ projectId, initialItems, isOwner }: Props) {
   const [items, setItems] = useState<RoadmapItem[]>(initialItems);
   const [addingToColumn, setAddingToColumn] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [addingColumn, setAddingColumn] = useState(false);
+  const [newColumnName, setNewColumnName] = useState("");
+  const [customColumns, setCustomColumns] = useState<string[]>([]);
 
   const quarters = getQuarters();
+
+  // Derive extra columns from items that don't match default quarters
+  const defaultKeys = new Set(quarters.map((q) => q.key));
+  const extraFromItems = Array.from(
+    new Set(items.map((i) => i.phase ?? "Backlog").filter((p) => !defaultKeys.has(p) && !p.startsWith("Q")))
+  );
+  const allCustom = Array.from(new Set([...extraFromItems, ...customColumns]));
+  const allColumns = [
+    ...quarters,
+    ...allCustom.map((c) => ({ key: c, label: c })),
+  ];
 
   const getColumnItems = (quarterKey: string) =>
     items.filter((item) => {
       const phase = item.phase ?? "Backlog";
-      // match "Q1", "Q1 2026", "Q1 2025" etc to the quarter key
       return phase === quarterKey || phase.startsWith(quarterKey + " ");
     });
+
+  const handleAddColumn = () => {
+    const name = newColumnName.trim();
+    if (!name) return;
+    if (allColumns.some((c) => c.key.toLowerCase() === name.toLowerCase())) {
+      toast.error("Column already exists");
+      return;
+    }
+    setCustomColumns((prev) => [...prev, name]);
+    setNewColumnName("");
+    setAddingColumn(false);
+  };
 
   const handleAdd = (item: RoadmapItem) => {
     setItems((prev) => [...prev, item]);
@@ -267,16 +292,17 @@ export function RoadmapColumns({ projectId, initialItems, isOwner }: Props) {
       )}
 
       {/* Quarter columns — horizontal scroll on small screens */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3 items-start">
-        {quarters.map((q) => {
+      <div className="flex gap-3 items-start overflow-x-auto pb-2">
+        {allColumns.map((q) => {
           const colItems = getColumnItems(q.key);
           const isBacklog = q.key === "Backlog";
+          const isCustom = !defaultKeys.has(q.key);
 
           return (
-            <div key={q.key} className="flex flex-col gap-2">
+            <div key={q.key} className="flex flex-col gap-2 min-w-[200px] w-[200px] shrink-0">
               {/* Column header */}
-              <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${isBacklog ? "bg-muted/60" : "bg-primary/8"}`}>
-                <span className={`text-xs font-semibold uppercase tracking-wide ${isBacklog ? "text-muted-foreground" : "text-primary"}`}>
+              <div className={`flex items-center justify-between px-3 py-2 rounded-lg ${isBacklog ? "bg-muted/60" : isCustom ? "bg-amber-50 dark:bg-amber-900/20" : "bg-primary/8"}`}>
+                <span className={`text-xs font-semibold uppercase tracking-wide ${isBacklog ? "text-muted-foreground" : isCustom ? "text-amber-700 dark:text-amber-400" : "text-primary"}`}>
                   {q.label}
                 </span>
                 <span className="text-xs text-muted-foreground bg-background/60 px-1.5 py-0.5 rounded-full">
@@ -293,7 +319,7 @@ export function RoadmapColumns({ projectId, initialItems, isOwner }: Props) {
                         key={item.id}
                         item={item}
                         projectId={projectId}
-                        quarters={quarters}
+                        quarters={allColumns}
                         onSave={handleSave}
                         onCancel={() => setEditingId(null)}
                       />
@@ -374,6 +400,48 @@ export function RoadmapColumns({ projectId, initialItems, isOwner }: Props) {
             </div>
           );
         })}
+
+        {/* Add column button */}
+        {isOwner && (
+          <div className="min-w-[180px] w-[180px] shrink-0">
+            {addingColumn ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-muted/60">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">New Column</span>
+                </div>
+                <div className="rounded-xl border bg-card p-3 space-y-2">
+                  <Input
+                    autoFocus
+                    value={newColumnName}
+                    onChange={(e) => setNewColumnName(e.target.value)}
+                    placeholder="Column name…"
+                    className="text-sm h-8"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleAddColumn();
+                      if (e.key === "Escape") { setAddingColumn(false); setNewColumnName(""); }
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <Button size="sm" className="h-7 text-xs flex-1" onClick={handleAddColumn} disabled={!newColumnName.trim()}>
+                      Add
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { setAddingColumn(false); setNewColumnName(""); }}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAddingColumn(true)}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors px-3 py-2 rounded-lg border-2 border-dashed border-border hover:border-primary/40 w-full h-[38px]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add column
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
