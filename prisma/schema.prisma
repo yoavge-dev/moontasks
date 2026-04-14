@@ -28,6 +28,35 @@ model User {
   notifications      Notification[]   @relation("NotificationRecipient")
   actorNotifications Notification[]   @relation("NotificationActor")
   sentInvites        TeamInvite[]
+  competitors        Competitor[]
+}
+
+model Competitor {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  owner     User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  snapshots CompetitorSnapshot[]
+
+  @@index([ownerId])
+}
+
+model CompetitorSnapshot {
+  id           String   @id @default(cuid())
+  competitorId String
+  contentHash  String
+  extracted    String   // JSON blob
+  summary      String?
+  changesSince String?  // AI summary of what changed vs previous
+  hasChanges   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  competitor Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@index([competitorId])
 }
 
 model UserSettings {
