@@ -9,7 +9,6 @@ import { TaskStatusBadge } from "@/components/tasks/TaskStatusBadge";
 import { TaskPriorityBadge } from "@/components/tasks/TaskPriorityBadge";
 import { JiraDashboardPanel, JiraStatCard } from "@/components/dashboard/JiraDashboardPanel";
 import { JiraSetupBanner } from "@/components/dashboard/JiraSetupBanner";
-import { SlackDigestWidget } from "@/components/dashboard/SlackDigestWidget";
 import { CheckSquare, Clock, FlaskConical, Users, Plus, PartyPopper } from "lucide-react";
 import { format, isToday } from "date-fns";
 
@@ -48,7 +47,6 @@ export default async function DashboardPage() {
     ]);
 
   const hasJira = !!(userSettings?.jiraDomain && userSettings?.jiraEmail && userSettings?.jiraToken);
-  const hasSlack = !!(userSettings?.slackToken && userSettings?.slackChannelId);
 
   const stats = [
     { label: "Open Tasks", value: openTaskCount, icon: CheckSquare, href: "/tasks", iconBg: "bg-sky-100 dark:bg-sky-900/30", iconColor: "text-sky-600 dark:text-sky-400", accent: "border-t-sky-400" },
@@ -97,7 +95,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Panels */}
-      <div className={`grid gap-6 ${(hasJira && hasSlack) ? "lg:grid-cols-4" : (hasJira || hasSlack) ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
+      <div className={`grid gap-6 ${hasJira ? "lg:grid-cols-3" : "lg:grid-cols-2"}`}>
         {/* Due Today */}
         <Card>
           <CardHeader className="pb-3">
@@ -163,9 +161,6 @@ export default async function DashboardPage() {
 
         {/* Jira panel — only renders if connected */}
         {hasJira && <JiraDashboardPanel />}
-
-        {/* Slack digest — only renders if connected */}
-        {hasSlack && <SlackDigestWidget />}
       </div>
     </div>
   );
