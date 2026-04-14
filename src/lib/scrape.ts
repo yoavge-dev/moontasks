@@ -75,29 +75,78 @@ export function hashContent(c: ExtractedContent): string {
   return Math.abs(hash).toString(16);
 }
 
-export function diffContent(prev: ExtractedContent, curr: ExtractedContent): string[] {
-  const changes: string[] = [];
+export type DiffSection = "title" | "description" | "headline" | "nav" | "cta" | "pricing" | "sections";
+export type DiffType = "added" | "removed" | "changed";
 
-  if (prev.title !== curr.title) changes.push(`Title: "${prev.title}" → "${curr.title}"`);
-  if (prev.description !== curr.description) changes.push(`Meta description changed`);
+export interface DiffItem {
+  section: DiffSection;
+  type: DiffType;
+  value: string;
+  before?: string;
+}
 
-  const h1Added = curr.h1.filter((h) => !prev.h1.includes(h));
-  const h1Removed = prev.h1.filter((h) => !curr.h1.includes(h));
-  if (h1Added.length) changes.push(`New H1: ${h1Added.map((h) => `"${h}"`).join(", ")}`);
-  if (h1Removed.length) changes.push(`Removed H1: ${h1Removed.map((h) => `"${h}"`).join(", ")}`);
+export function diffContent(prev: ExtractedContent, curr: ExtractedContent): DiffItem[] {
+  const items: DiffItem[] = [];
 
-  const navAdded = curr.nav.filter((n) => !prev.nav.includes(n));
-  const navRemoved = prev.nav.filter((n) => !curr.nav.includes(n));
-  if (navAdded.length) changes.push(`New nav items: ${navAdded.map((n) => `"${n}"`).join(", ")}`);
-  if (navRemoved.length) changes.push(`Removed nav items: ${navRemoved.map((n) => `"${n}"`).join(", ")}`);
+  if (prev.title !== curr.title && curr.title)
+    items.push({ section: "title", type: "changed", value: curr.title, before: prev.title });
 
-  const ctaAdded = curr.ctas.filter((c) => !prev.ctas.includes(c));
-  const ctaRemoved = prev.ctas.filter((c) => !curr.ctas.includes(c));
-  if (ctaAdded.length) changes.push(`New CTAs: ${ctaAdded.map((c) => `"${c}"`).join(", ")}`);
-  if (ctaRemoved.length) changes.push(`Removed CTAs: ${ctaRemoved.map((c) => `"${c}"`).join(", ")}`);
+  if (prev.description !== curr.description && curr.description)
+    items.push({ section: "description", type: "changed", value: curr.description, before: prev.description });
 
-  const pricingAdded = curr.pricing.filter((p) => !prev.pricing.includes(p));
-  if (pricingAdded.length) changes.push(`New pricing signals: ${pricingAdded.join(", ")}`);
+  // H1: if both sides have exactly one headline and it changed, show before→after
+  if (prev.h1.length === 1 && curr.h1.length === 1 && prev.h1[0] !== curr.h1[0]) {
+    items.push({ section: "headline", type: "changed", value: curr.h1[0], before: prev.h1[0] });
+  } else {
+    for (const h of curr.h1.filter((h) => !prev.h1.includes(h)))
+      items.push({ section: "headline", type: "added", value: h });
+    for (const h of prev.h1.filter((h) => !curr.h1.includes(h)))
+      items.push({ section: "headline", type: "removed", value: h });
+  }
 
-  return changes;
+  // H2: pair removed+added when counts match (likely reworded sections, not restructured)
+  const addedH2 = curr.h2.filter((h) => !prev.h2.includes(h));
+  const removedH2 = prev.h2.filter((h) => !curr.h2.includes(h));
+  if (addedH2.length > 0 && addedH2.length === removedH2.length && addedH2.length <= 3) {
+    for (let i = 0; i < addedH2.length; i++)
+      items.push({ section: "sections", type: "changed", value: addedH2[i], before: removedH2[i] });
+  } else {
+    for (const h of addedH2) items.push({ section: "sections", type: "added", value: h });
+    for (const h of removedH2) items.push({ section: "sections", type: "removed", value: h });
+  }
+
+  // CTAs: single swap shows as before→after
+  const addedCta = curr.ctas.filter((c) => !prev.ctas.includes(c));
+  const removedCta = prev.ctas.filter((c) => !curr.ctas.includes(c));
+  if (addedCta.length === 1 && removedCta.length === 1) {
+    items.push({ section: "cta", type: "changed", value: addedCta[0], before: removedCta[0] });
+  } else {
+    for (const c of addedCta) items.push({ section: "cta", type: "added", value: c });
+    for (const c of removedCta) items.push({ section: "cta", type: "removed", value: c });
+  }
+
+  for (const n of curr.nav.filter((n) => !prev.nav.includes(n)))
+    items.push({ section: "nav", type: "added", value: n });
+  for (const n of prev.nav.filter((n) => !curr.nav.includes(n)))
+    items.push({ section: "nav", type: "removed", value: n });
+
+  for (const p of curr.pricing.filter((p) => !prev.pricing.includes(p)))
+    items.push({ section: "pricing", type: "added", value: p });
+  for (const p of prev.pricing.filter((p) => !curr.pricing.includes(p)))
+    items.push({ section: "pricing", type: "removed", value: p });
+
+  return items;
+}
+
+export function diffToStrings(items: DiffItem[]): string[] {
+  const sectionLabel: Record<DiffSection, string> = {
+    title: "Page title", description: "Meta description", headline: "Headline",
+    nav: "Navigation", cta: "CTA button", pricing: "Pricing", sections: "Section",
+  };
+  return items.map((d) => {
+    const label = sectionLabel[d.section];
+    if (d.type === "changed") return `${label}: "${d.before}" → "${d.value}"`;
+    if (d.type === "added") return `${label} added: "${d.value}"`;
+    return `${label} removed: "${d.value}"`;
+  });
 }

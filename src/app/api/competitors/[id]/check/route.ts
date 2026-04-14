@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { extractContent, hashContent, diffContent, ExtractedContent } from "@/lib/scrape";
+import { extractContent, hashContent, diffContent, diffToStrings, ExtractedContent } from "@/lib/scrape";
 import Anthropic from "@anthropic-ai/sdk";
 
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -41,27 +41,30 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   // Build diff
   let changesSince: string | null = null;
+  let rawDiffJson: string | null = null;
   if (hasChanges && prev) {
     const prevExtracted = JSON.parse(prev.extracted) as ExtractedContent;
-    const rawDiff = diffContent(prevExtracted, extracted);
+    const diffItems = diffContent(prevExtracted, extracted);
+    rawDiffJson = diffItems.length > 0 ? JSON.stringify(diffItems) : null;
 
-    if (rawDiff.length > 0 && process.env.ANTHROPIC_API_KEY) {
+    if (diffItems.length > 0 && process.env.ANTHROPIC_API_KEY) {
       try {
         const client = new Anthropic();
+        const diffStrings = diffToStrings(diffItems);
         const response = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 400,
           messages: [{
             role: "user",
-            content: `A competitor website (${competitor.name}) has changed. Here are the raw detected changes:\n\n${rawDiff.join("\n")}\n\nWrite a brief, plain-English summary of what changed and why it might matter strategically. 2-4 bullet points max.`,
+            content: `A competitor website (${competitor.name}) has changed. Here are the raw detected changes:\n\n${diffStrings.join("\n")}\n\nWrite a brief, plain-English summary of what changed and why it might matter strategically. 2-4 bullet points max.`,
           }],
         });
         changesSince = (response.content[0] as { type: string; text: string }).text;
       } catch {
-        changesSince = rawDiff.join("\n");
+        changesSince = diffToStrings(diffItems).join("\n");
       }
-    } else if (rawDiff.length > 0) {
-      changesSince = rawDiff.join("\n");
+    } else if (diffItems.length > 0) {
+      changesSince = diffToStrings(diffItems).join("\n");
     }
   }
 
@@ -72,6 +75,7 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
       extracted: JSON.stringify(extracted),
       hasChanges,
       changesSince,
+      rawDiff: rawDiffJson,
     },
   });
 

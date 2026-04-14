@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { extractContent, hashContent, diffContent, ExtractedContent } from "@/lib/scrape";
+import { extractContent, hashContent, diffContent, diffToStrings, ExtractedContent } from "@/lib/scrape";
 import { createNotification } from "@/lib/notifications";
 import Anthropic from "@anthropic-ai/sdk";
 
@@ -39,26 +39,29 @@ export async function GET(req: NextRequest) {
       checked++;
 
       let changesSince: string | null = null;
+      let rawDiffJson: string | null = null;
       if (hasChanges && prev) {
         const prevExtracted = JSON.parse(prev.extracted) as ExtractedContent;
-        const rawDiff = diffContent(prevExtracted, extracted);
+        const diffItems = diffContent(prevExtracted, extracted);
+        rawDiffJson = diffItems.length > 0 ? JSON.stringify(diffItems) : null;
 
-        if (rawDiff.length > 0 && client) {
+        if (diffItems.length > 0 && client) {
           try {
+            const diffStrings = diffToStrings(diffItems);
             const response = await client.messages.create({
               model: "claude-haiku-4-5-20251001",
               max_tokens: 300,
               messages: [{
                 role: "user",
-                content: `Competitor website "${competitor.name}" changed. Raw diff:\n${rawDiff.join("\n")}\n\nBrief plain-English summary (2-3 bullets) of what changed and why it might matter.`,
+                content: `Competitor website "${competitor.name}" changed. Raw diff:\n${diffStrings.join("\n")}\n\nBrief plain-English summary (2-3 bullets) of what changed and why it might matter.`,
               }],
             });
             changesSince = (response.content[0] as { type: string; text: string }).text;
           } catch {
-            changesSince = rawDiff.join("\n");
+            changesSince = diffToStrings(diffItems).join("\n");
           }
-        } else if (rawDiff.length > 0) {
-          changesSince = rawDiff.join("\n");
+        } else if (diffItems.length > 0) {
+          changesSince = diffToStrings(diffItems).join("\n");
         }
 
         if (changesSince) {
@@ -80,6 +83,7 @@ export async function GET(req: NextRequest) {
           extracted: JSON.stringify(extracted),
           hasChanges,
           changesSince,
+          rawDiff: rawDiffJson,
         },
       });
     } catch {
