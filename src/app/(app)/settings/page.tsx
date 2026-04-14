@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, ExternalLink, Trash2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 const schema = z.object({
   jiraDomain: z.string().min(1, "Domain is required"),
@@ -22,6 +22,7 @@ export default function SettingsPage() {
   const [hasToken, setHasToken] = useState(false);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -128,18 +129,40 @@ export default function SettingsPage() {
                 {...register("jiraToken")}
               />
               {errors.jiraToken && <p className="text-xs text-red-500">{errors.jiraToken.message}</p>}
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                Generate one at{" "}
-                <a
-                  href="https://id.atlassian.com/manage-profile/security/api-tokens"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary underline inline-flex items-center gap-0.5"
+
+              {/* How-to guide */}
+              <div className="rounded-lg border border-border bg-muted/40 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setGuideOpen((v) => !v)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  id.atlassian.com
-                  <ExternalLink className="h-2.5 w-2.5" />
-                </a>
-              </p>
+                  <span>How to get your Jira API token</span>
+                  {guideOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
+                {guideOpen && (
+                  <div className="px-3 pb-3 space-y-2 border-t border-border">
+                    <ol className="mt-2 space-y-2 text-xs text-muted-foreground list-none">
+                      <li className="flex gap-2">
+                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">1</span>
+                        <span>Go to <a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-0.5">id.atlassian.com/manage-profile/security/api-tokens <ExternalLink className="h-2.5 w-2.5" /></a></span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">2</span>
+                        <span>Click <strong className="text-foreground">Create API token</strong>, give it a name (e.g. "MoonTasks")</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">3</span>
+                        <span>Copy the token and paste it in the field above</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">4</span>
+                        <span>Your <strong className="text-foreground">Jira domain</strong> is the part before <code className="bg-muted px-1 rounded">.atlassian.net</code> in your Jira URL</span>
+                      </li>
+                    </ol>
+                  </div>
+                )}
+              </div>
             </div>
           </CardContent>
 
