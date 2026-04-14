@@ -37,6 +37,7 @@ export default async function DashboardPage() {
         include: {
           assignee: { select: { id: true, name: true, email: true } },
           team: { select: { id: true, name: true } },
+          project: { select: { id: true, name: true } },
         },
         orderBy: { updatedAt: "desc" },
         take: 5,
