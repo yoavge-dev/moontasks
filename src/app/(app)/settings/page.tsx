@@ -303,8 +303,25 @@ export default function SettingsPage() {
                       <option key={c.id} value={c.id}>#{c.name}</option>
                     ))}
                   </select>
+                  <p className="text-xs text-muted-foreground">Private channel not listed? Paste its ID below.</p>
                 </div>
               )}
+
+              <div className="space-y-1">
+                <Label htmlFor="slackChannelId">
+                  {slackChannels.length > 0 ? "Or enter channel ID manually" : "Channel ID"}
+                </Label>
+                <Input
+                  id="slackChannelId"
+                  placeholder="C0123ABC456"
+                  value={slackChannelId}
+                  onChange={(e) => setSlackChannelId(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Right-click any channel in Slack → View channel details → scroll to bottom for the ID.
+                  For private channels, invite the bot first: <code className="bg-muted px-1 rounded">/invite @your-app-name</code>
+                </p>
+              </div>
 
               {/* Guide */}
               <div className="rounded-lg border border-border bg-muted/40">
