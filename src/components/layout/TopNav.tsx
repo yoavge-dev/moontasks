@@ -3,6 +3,7 @@
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, Menu, LogOut, Settings, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationBell } from "./NotificationBell";
@@ -10,7 +11,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -51,6 +51,7 @@ function AvatarCircle({ name, email, size = "md" }: { name?: string | null; emai
 export function TopNav() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href;
@@ -125,30 +126,29 @@ export function TopNav() {
           <Settings className="h-4.5 w-4.5" />
         </Link>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-2 h-auto px-2 py-1.5 rounded-lg font-normal hover:bg-muted transition-colors outline-none">
+        <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+          <DropdownMenuTrigger className="flex items-center gap-2 h-auto px-2 py-1.5 rounded-lg hover:bg-muted transition-colors outline-none">
             <AvatarCircle name={user?.name} email={user?.email} />
             <div className="hidden sm:block text-left leading-tight">
               <p className="text-xs font-semibold text-foreground">{user?.name ?? "Account"}</p>
               <p className="text-[10px] text-muted-foreground">{user?.email}</p>
             </div>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuLabel className="pb-1">
+          <DropdownMenuContent align="end" className="w-52">
+            <div className="px-2 py-2 border-b border-border mb-1">
               <p className="font-semibold text-sm">{user?.name ?? "Account"}</p>
-              <p className="text-xs text-muted-foreground font-normal truncate">{user?.email}</p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer">
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+            </div>
+            <DropdownMenuItem onClick={() => { setMenuOpen(false); router.push("/settings"); }}>
               <Settings className="h-4 w-4 mr-2" />
               Settings
             </DropdownMenuItem>
             <DropdownMenuItem
-              className="cursor-pointer"
               onClick={() => {
                 const name = user?.name ?? user?.email ?? "";
                 const url = `${window.location.origin}/join${name ? `?from=${encodeURIComponent(name)}` : ""}`;
                 navigator.clipboard.writeText(url);
+                setMenuOpen(false);
                 toast.success("Invite link copied!");
               }}
             >
@@ -157,8 +157,8 @@ export function TopNav() {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              className="text-destructive focus:text-destructive cursor-pointer"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              variant="destructive"
+              onClick={() => { setMenuOpen(false); signOut({ callbackUrl: "/login" }); }}
             >
               <LogOut className="h-4 w-4 mr-2" />
               Sign out
