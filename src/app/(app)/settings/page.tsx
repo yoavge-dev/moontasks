@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, ExternalLink, Trash2, ChevronDown, ChevronUp, CalendarDays } from "lucide-react";
+import { CheckCircle2, ExternalLink, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 
 const schema = z.object({
   jiraDomain: z.string().min(1, "Domain is required"),
@@ -18,29 +18,14 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
-const calSchema = z.object({
-  calendarUrl: z.string().url("Must be a valid URL"),
-});
-type CalFormValues = z.infer<typeof calSchema>;
-
 export default function SettingsPage() {
   const [hasToken, setHasToken] = useState(false);
   const [loading, setLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
 
-  // Calendar state
-  const [calConnected, setCalConnected] = useState(false);
-  const [calLoading, setCalLoading] = useState(true);
-  const [calGuideOpen, setCalGuideOpen] = useState(false);
-  const [calDisconnecting, setCalDisconnecting] = useState(false);
-
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-  });
-
-  const { register: calRegister, handleSubmit: calHandleSubmit, formState: { errors: calErrors, isSubmitting: calSubmitting } } = useForm<CalFormValues>({
-    resolver: zodResolver(calSchema),
   });
 
   useEffect(() => {
@@ -52,13 +37,6 @@ export default function SettingsPage() {
           setHasToken(jira.data.hasToken);
         }
         setLoading(false);
-      });
-
-    fetch("/api/settings/calendar")
-      .then((r) => r.json())
-      .then((cal) => {
-        setCalConnected(!!cal.data?.connected);
-        setCalLoading(false);
       });
   }, [reset]);
 
@@ -87,30 +65,7 @@ export default function SettingsPage() {
     toast.success("Jira disconnected");
   };
 
-  const onCalSubmit = async (values: CalFormValues) => {
-    const res = await fetch("/api/settings/calendar", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    const json = await res.json();
-    if (!res.ok) {
-      toast.error(json.error ?? "Failed to save");
-      return;
-    }
-    setCalConnected(true);
-    toast.success("Google Calendar connected!");
-  };
-
-  const disconnectCal = async () => {
-    setCalDisconnecting(true);
-    await fetch("/api/settings/calendar", { method: "DELETE" });
-    setCalConnected(false);
-    setCalDisconnecting(false);
-    toast.success("Google Calendar disconnected");
-  };
-
-  if (loading || calLoading) return null;
+  if (loading) return null;
 
   return (
     <div className="max-w-xl space-y-8">
@@ -223,100 +178,6 @@ export default function SettingsPage() {
                 className="text-destructive hover:text-destructive"
                 onClick={disconnect}
                 disabled={disconnecting}
-              >
-                <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                Disconnect
-              </Button>
-            )}
-          </CardFooter>
-        </form>
-      </Card>
-
-      {/* Google Calendar */}
-      <Card>
-        <CardHeader>
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4 text-primary" />
-              Google Calendar
-              {calConnected && (
-                <span className="inline-flex items-center gap-1 text-xs font-normal text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Connected
-                </span>
-              )}
-            </CardTitle>
-            <CardDescription className="mt-1">
-              Show your upcoming Google Calendar meetings on the dashboard.
-            </CardDescription>
-          </div>
-        </CardHeader>
-
-        <form onSubmit={calHandleSubmit(onCalSubmit)}>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="calendarUrl">
-                Secret iCal URL
-                {calConnected && <span className="text-muted-foreground font-normal"> — paste a new URL to replace</span>}
-              </Label>
-              <Input
-                id="calendarUrl"
-                placeholder="https://calendar.google.com/calendar/ical/... or any iCal URL"
-                {...calRegister("calendarUrl")}
-              />
-              {calErrors.calendarUrl && <p className="text-xs text-red-500">{calErrors.calendarUrl.message}</p>}
-
-              {/* How-to guide */}
-              <div className="rounded-lg border border-border bg-muted/40 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setCalGuideOpen((v) => !v)}
-                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  <span>How to get your secret iCal URL</span>
-                  {calGuideOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                </button>
-                {calGuideOpen && (
-                  <div className="px-3 pb-3 space-y-2 border-t border-border">
-                    <ol className="mt-2 space-y-2 text-xs text-muted-foreground list-none">
-                      <li className="flex gap-2">
-                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">1</span>
-                        <span>Open <a href="https://calendar.google.com" target="_blank" rel="noopener noreferrer" className="text-primary underline inline-flex items-center gap-0.5">Google Calendar <ExternalLink className="h-2.5 w-2.5" /></a> and click the gear icon → <strong className="text-foreground">Settings</strong></span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">2</span>
-                        <span>In the left sidebar, click on the calendar you want to add under <strong className="text-foreground">Settings for my calendars</strong></span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">3</span>
-                        <span>Scroll down to <strong className="text-foreground">Integrate calendar</strong></span>
-                      </li>
-                      <li className="flex gap-2">
-                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">4</span>
-                        <span>Copy the <strong className="text-foreground">Secret address in iCal format</strong> and paste it above</span>
-                      </li>
-                    </ol>
-                    <p className="text-xs text-muted-foreground mt-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded border border-amber-200 dark:border-amber-800">
-                      Keep this URL private — anyone with it can read your calendar events.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-
-          <CardFooter className="flex items-center gap-3">
-            <Button type="submit" disabled={calSubmitting}>
-              {calSubmitting ? "Saving…" : calConnected ? "Update" : "Connect Calendar"}
-            </Button>
-            {calConnected && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive"
-                onClick={disconnectCal}
-                disabled={calDisconnecting}
               >
                 <Trash2 className="h-3.5 w-3.5 mr-1.5" />
                 Disconnect
