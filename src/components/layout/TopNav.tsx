@@ -61,7 +61,7 @@ export function TopNav() {
   const user = session?.user;
 
   return (
-    <header className="h-13 border-b border-border bg-card flex items-center px-4 gap-3 shrink-0 z-20">
+    <header className="h-12 border-b border-border bg-card flex items-center px-4 gap-3 shrink-0 z-20">
       {/* Mobile menu */}
       <Sheet>
         <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" />}>
@@ -87,7 +87,7 @@ export function TopNav() {
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all",
                   isActive(href, exact)
-                    ? "bg-primary/90 text-white"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
                     : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/8"
                 )}
               >

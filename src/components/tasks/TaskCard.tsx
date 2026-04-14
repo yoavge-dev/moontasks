@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { format } from "date-fns";
-import { MessageSquare, Calendar, FolderKanban } from "lucide-react";
+import { Calendar, FolderKanban, MessageSquare } from "lucide-react";
 import { TaskStatusBadge } from "./TaskStatusBadge";
 import { TaskPriorityBadge } from "./TaskPriorityBadge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
-// Monday-style colored left border by status
-const statusBorder: Record<string, string> = {
-  todo: "border-l-slate-400",
+const statusBorderColor: Record<string, string> = {
+  todo:        "border-l-slate-300",
   in_progress: "border-l-amber-400",
-  done: "border-l-emerald-500",
+  done:        "border-l-emerald-500",
 };
 
 interface TaskCardProps {
@@ -37,71 +37,88 @@ function initials(name?: string | null, email?: string) {
 }
 
 export function TaskCard({ task }: TaskCardProps) {
-  const tags: string[] = (() => { try { return JSON.parse(task.tags); } catch { return []; } })();
   const dueDate = task.dueDate ? new Date(task.dueDate) : null;
   const isOverdue = dueDate && dueDate < new Date() && task.status !== "done";
-  const borderClass = statusBorder[task.status] ?? "border-l-slate-300";
+  const borderClass = statusBorderColor[task.status] ?? "border-l-slate-300";
 
   return (
     <Link href={`/tasks/${task.id}`}>
-      <div className={`group bg-card border border-border border-l-4 ${borderClass} rounded-lg p-4 hover:shadow-md transition-all cursor-pointer space-y-3`}>
-        <div className="flex items-start justify-between gap-2">
-          <p className="font-semibold text-sm group-hover:text-primary transition-colors line-clamp-2 leading-snug">
+      {/* Desktop: table row */}
+      <div className={cn(
+        "group hidden sm:grid grid-cols-[1fr_120px_110px_90px_32px] gap-4 px-4 py-3.5 border-b last:border-0",
+        "hover:bg-muted/40 transition-colors cursor-pointer items-center",
+        "border-l-[3px]",
+        borderClass
+      )}>
+        {/* Title col */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="text-sm font-medium truncate group-hover:text-primary transition-colors">
             {task.title}
-          </p>
-          <TaskPriorityBadge priority={task.priority} />
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <TaskStatusBadge status={task.status} />
-          {task.project && (
-            <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
-              <FolderKanban className="h-3 w-3" />
-              {task.project.name}
-            </span>
-          )}
-        </div>
-
-        {tags.length > 0 && (
-          <div className="flex items-center gap-1 flex-wrap">
-            {tags.slice(0, 3).map((tag) => (
-              <span key={tag} className="text-[11px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">
-                {tag}
-              </span>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-          <div className="flex items-center gap-3">
-            {dueDate && (
-              <span className={`flex items-center gap-1 ${isOverdue ? "text-red-500 font-medium" : ""}`}>
-                <Calendar className="h-3 w-3" />
-                {format(dueDate, "MMM d")}
+          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {task.project && (
+              <span className="hidden lg:inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-300">
+                <FolderKanban className="h-2.5 w-2.5" />
+                {task.project.name}
               </span>
             )}
             {(task._count?.comments ?? 0) > 0 && (
-              <span className="flex items-center gap-1">
+              <span className="hidden lg:inline-flex items-center gap-0.5 text-[10px] text-muted-foreground">
                 <MessageSquare className="h-3 w-3" />
                 {task._count!.comments}
               </span>
             )}
-            {task.team && (
-              <span className="bg-muted px-1.5 py-0.5 rounded text-[11px] font-medium">{task.team.name}</span>
-            )}
           </div>
-          {task.assignee && (
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-semibold">
-                {initials(task.assignee.name, task.assignee.email)}
-              </AvatarFallback>
-            </Avatar>
-          )}
         </div>
 
-        <p className="text-[11px] text-muted-foreground/60">
-          Created {format(new Date(task.createdAt), "MMM d, yyyy")}
-        </p>
+        {/* Status col */}
+        <TaskStatusBadge status={task.status} />
+
+        {/* Priority col */}
+        <TaskPriorityBadge priority={task.priority} />
+
+        {/* Due date col */}
+        <span className={cn(
+          "text-xs",
+          isOverdue ? "text-red-500 font-semibold" : "text-muted-foreground"
+        )}>
+          {dueDate ? (
+            <span className="flex items-center gap-1">
+              {isOverdue && <Calendar className="h-3 w-3" />}
+              {format(dueDate, "MMM d")}
+            </span>
+          ) : "—"}
+        </span>
+
+        {/* Assignee col */}
+        {task.assignee ? (
+          <Avatar className="h-6 w-6 shrink-0">
+            <AvatarFallback className="text-[9px] bg-primary/10 text-primary font-bold">
+              {initials(task.assignee.name, task.assignee.email)}
+            </AvatarFallback>
+          </Avatar>
+        ) : <span />}
+      </div>
+
+      {/* Mobile: compact card */}
+      <div className={cn(
+        "group sm:hidden flex items-center gap-3 px-4 py-3.5 border-b last:border-0",
+        "hover:bg-muted/40 transition-colors cursor-pointer",
+        "border-l-[3px]",
+        borderClass
+      )}>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{task.title}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <TaskStatusBadge status={task.status} />
+            {dueDate && (
+              <span className={cn("text-xs", isOverdue ? "text-red-500" : "text-muted-foreground")}>
+                {format(dueDate, "MMM d")}
+              </span>
+            )}
+          </div>
+        </div>
+        <TaskPriorityBadge priority={task.priority} />
       </div>
     </Link>
   );

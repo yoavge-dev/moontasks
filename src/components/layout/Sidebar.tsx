@@ -29,8 +29,8 @@ export function Sidebar() {
     cn(
       "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all",
       isActive(href, exact)
-        ? "bg-primary/90 text-white shadow-sm"
-        : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-white/8"
+        ? "bg-sidebar-accent text-sidebar-accent-foreground"
+        : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
     );
 
   return (

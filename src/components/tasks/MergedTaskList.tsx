@@ -126,7 +126,16 @@ export function MergedTaskList({ localTasks, hasJiraConfigured }: Props) {
           </LinkButton>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="bg-card rounded-lg border overflow-hidden">
+          {/* Column headers */}
+          <div className="hidden sm:grid grid-cols-[1fr_120px_110px_90px_32px] gap-4 px-4 py-2.5 border-b bg-muted/40 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <span>Task</span>
+            <span>Status</span>
+            <span>Priority</span>
+            <span>Due date</span>
+            <span />
+          </div>
+
           {merged.map((item) =>
             item.type === "local" ? (
               <TaskCard key={`local-${item.localTask!.id}`} task={item.localTask!} />
@@ -138,16 +147,15 @@ export function MergedTaskList({ localTasks, hasJiraConfigured }: Props) {
           {/* Jira loading skeletons */}
           {jiraLoading &&
             [1, 2, 3].map((i) => (
-              <div key={`skel-${i}`} className="rounded-xl border bg-card p-4 space-y-3">
-                <div className="flex justify-between gap-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-4 w-12" />
+              <div key={`skel-${i}`} className="grid grid-cols-[1fr_120px_110px_90px_32px] gap-4 px-4 py-3 border-b last:border-0 items-center">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-2 w-2 rounded-full shrink-0" />
+                  <Skeleton className="h-4 w-48" />
                 </div>
-                <Skeleton className="h-4 w-1/2" />
-                <div className="flex justify-between">
-                  <Skeleton className="h-3 w-16" />
-                  <Skeleton className="h-4 w-14 rounded-full" />
-                </div>
+                <Skeleton className="h-5 w-20 rounded-sm" />
+                <Skeleton className="h-5 w-16 rounded-sm" />
+                <Skeleton className="h-4 w-12" />
+                <Skeleton className="h-6 w-6 rounded-full" />
               </div>
             ))}
         </div>

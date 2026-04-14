@@ -50,38 +50,38 @@
 
 :root {
   /* Moonshoot Marketing — Monday.com-inspired */
-  --background: oklch(0.965 0.007 258);   /* light lavender-gray, like Monday's canvas */
-  --foreground: oklch(0.16 0.025 262);
+  --background: oklch(0.968 0.005 258);
+  --foreground: oklch(0.15 0.025 262);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.16 0.025 262);
+  --card-foreground: oklch(0.15 0.025 262);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.16 0.025 262);
-  --primary: oklch(0.55 0.255 272);       /* Monday purple ~#6161FF */
+  --popover-foreground: oklch(0.15 0.025 262);
+  --primary: oklch(0.52 0.26 272);
   --primary-foreground: oklch(0.99 0 0);
-  --secondary: oklch(0.94 0.02 268);
+  --secondary: oklch(0.94 0.018 268);
   --secondary-foreground: oklch(0.38 0.12 268);
-  --muted: oklch(0.95 0.01 262);
-  --muted-foreground: oklch(0.52 0.025 262);
-  --accent: oklch(0.93 0.04 268);
+  --muted: oklch(0.955 0.008 262);
+  --muted-foreground: oklch(0.50 0.022 262);
+  --accent: oklch(0.94 0.03 268);
   --accent-foreground: oklch(0.38 0.12 268);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.895 0.012 262);
-  --input: oklch(0.895 0.012 262);
-  --ring: oklch(0.55 0.255 272);
-  --chart-1: oklch(0.55 0.255 272);
+  --border: oklch(0.905 0.009 262);
+  --input: oklch(0.905 0.009 262);
+  --ring: oklch(0.52 0.26 272);
+  --chart-1: oklch(0.52 0.26 272);
   --chart-2: oklch(0.67 0.19 200);
   --chart-3: oklch(0.72 0.19 145);
   --chart-4: oklch(0.78 0.17 68);
   --chart-5: oklch(0.63 0.22 30);
-  --radius: 0.5rem;                       /* tighter radius = Monday feel */
-  --sidebar: oklch(0.155 0.028 265);      /* dark navy sidebar */
-  --sidebar-foreground: oklch(0.94 0.01 262);
-  --sidebar-primary: oklch(0.55 0.255 272);
+  --radius: 0.4rem;
+  --sidebar: oklch(0.148 0.026 264);
+  --sidebar-foreground: oklch(0.93 0.01 262);
+  --sidebar-primary: oklch(0.52 0.26 272);
   --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.22 0.03 262);
-  --sidebar-accent-foreground: oklch(0.94 0.01 262);
-  --sidebar-border: oklch(0.26 0.03 262);
-  --sidebar-ring: oklch(0.55 0.255 272);
+  --sidebar-accent: oklch(1 0 0 / 0.12);
+  --sidebar-accent-foreground: oklch(0.97 0.005 262);
+  --sidebar-border: oklch(1 0 0 / 0.09);
+  --sidebar-ring: oklch(0.52 0.26 272);
 }
 
 .dark {
@@ -137,5 +137,9 @@
   [data-slot="popover-trigger"],
   [data-slot="dropdown-menu-trigger"] {
     cursor: pointer;
+  }
+  /* Consistent card elevation */
+  [data-slot="card"] {
+    box-shadow: 0 1px 3px 0 oklch(0 0 0 / 0.06), 0 1px 2px -1px oklch(0 0 0 / 0.04);
   }
 }
