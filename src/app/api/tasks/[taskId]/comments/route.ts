@@ -47,13 +47,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ taskId:
       include: { author: { select: { id: true, name: true, email: true } } },
     });
 
-    // Notify task owner and assignee (skip the commenter)
+    const actorName = comment.author.name ?? comment.author.email;
+
+    // Notify task owner and assignee
     const notifyIds = new Set<string>();
     notifyIds.add(task.ownerId);
     if (task.assigneeId) notifyIds.add(task.assigneeId);
-    notifyIds.delete(userId); // don't notify yourself
+    notifyIds.delete(userId);
 
-    const actorName = comment.author.name ?? comment.author.email;
     await Promise.all(
       [...notifyIds].map((recipientId) =>
         createNotification({
@@ -62,6 +63,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ taskId:
           type: "comment",
           title: `${actorName} commented on "${task.title}"`,
           body: parsed.data.body.slice(0, 100),
+          link: `/tasks/${taskId}`,
+        })
+      )
+    );
+
+    // Notify mentioned users (@[Name:userId] pattern)
+    const mentionRegex = /@\[([^\]]+):([^\]]+)\]/g;
+    const mentionedIds = new Set<string>();
+    let match;
+    while ((match = mentionRegex.exec(parsed.data.body)) !== null) {
+      mentionedIds.add(match[2]);
+    }
+    mentionedIds.delete(userId); // don't notify yourself
+
+    await Promise.all(
+      [...mentionedIds].map((mentionedId) =>
+        createNotification({
+          userId: mentionedId,
+          actorId: userId,
+          type: "mention",
+          title: `${actorName} mentioned you in "${task.title}"`,
+          body: parsed.data.body.replace(/@\[([^\]]+):[^\]]+\]/g, "@$1").slice(0, 100),
           link: `/tasks/${taskId}`,
         })
       )
