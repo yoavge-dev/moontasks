@@ -9,9 +9,10 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 const statusBorderColor: Record<string, string> = {
-  todo:        "border-l-slate-300",
-  in_progress: "border-l-amber-400",
-  done:        "border-l-emerald-500",
+  todo:        "border-l-[#c4c4c4]",
+  in_progress: "border-l-[#fdab3d]",
+  done:        "border-l-[#00c875]",
+  stuck:       "border-l-[#e2445c]",
 };
 
 interface TaskCardProps {

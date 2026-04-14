@@ -1,15 +1,17 @@
 import { cn } from "@/lib/utils";
 
+// Monday.com exact status colors
 const statusConfig = {
-  todo:        { label: "Not started",   className: "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300" },
-  in_progress: { label: "Working on it", className: "bg-amber-400 text-white" },
-  done:        { label: "Done",          className: "bg-emerald-500 text-white" },
+  todo:        { label: "Not started",   className: "bg-[#c4c4c4] text-white" },
+  in_progress: { label: "Working on it", className: "bg-[#fdab3d] text-white" },
+  done:        { label: "Done",          className: "bg-[#00c875] text-white" },
+  stuck:       { label: "Stuck",         className: "bg-[#e2445c] text-white" },
 };
 
 export function TaskStatusBadge({ status }: { status: string }) {
   const config = statusConfig[status as keyof typeof statusConfig] ?? {
     label: status,
-    className: "bg-slate-200 text-slate-600",
+    className: "bg-[#c4c4c4] text-white",
   };
   return (
     <span className={cn(
