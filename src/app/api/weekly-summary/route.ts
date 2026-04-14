@@ -30,10 +30,10 @@ export async function GET(req: NextRequest) {
       OR: [
         // completed this week
         { status: "done", updatedAt: { gte: monday, lte: sunday } },
-        // created or updated this week and not done
-        { status: { not: "done" }, updatedAt: { gte: monday, lte: sunday } },
-        // due this week
-        { dueDate: { gte: monday, lte: sunday } },
+        // currently in progress or stuck (always relevant)
+        { status: { in: ["in_progress", "stuck"] } },
+        // due this week (not done)
+        { status: { not: "done" }, dueDate: { gte: monday, lte: sunday } },
       ],
     },
     include: {
