@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, ExternalLink, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, ExternalLink, Trash2, ChevronDown, ChevronUp, MessageCircle } from "lucide-react";
 
 const schema = z.object({
   jiraDomain: z.string().min(1, "Domain is required"),
@@ -17,6 +17,148 @@ const schema = z.object({
   jiraToken: z.string().min(1, "API token is required"),
 });
 type FormValues = z.infer<typeof schema>;
+
+const whatsappSchema = z.object({
+  phone: z.string().min(7, "Enter a valid phone number"),
+});
+type WhatsappFormValues = z.infer<typeof whatsappSchema>;
+
+function WhatsappCard() {
+  const [linkedPhone, setLinkedPhone] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [commandsOpen, setCommandsOpen] = useState(false);
+
+  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<WhatsappFormValues>({
+    resolver: zodResolver(whatsappSchema),
+  });
+
+  useEffect(() => {
+    fetch("/api/settings/whatsapp")
+      .then((r) => r.json())
+      .then((json) => {
+        setLinkedPhone(json.data?.whatsappPhone ?? null);
+        setLoading(false);
+      });
+  }, []);
+
+  const onSubmit = async (values: WhatsappFormValues) => {
+    const res = await fetch("/api/settings/whatsapp", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone: values.phone }),
+    });
+    const json = await res.json();
+    if (!res.ok) { toast.error(json.error ?? "Failed to save"); return; }
+    setLinkedPhone(json.data.whatsappPhone);
+    reset({ phone: "" });
+    toast.success("WhatsApp connected!");
+  };
+
+  const disconnect = async () => {
+    setDisconnecting(true);
+    await fetch("/api/settings/whatsapp", { method: "DELETE" });
+    setLinkedPhone(null);
+    setDisconnecting(false);
+    toast.success("WhatsApp disconnected");
+  };
+
+  if (loading) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp Bot
+              {linkedPhone && (
+                <span className="inline-flex items-center gap-1 text-xs font-normal text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Connected
+                </span>
+              )}
+            </CardTitle>
+            <CardDescription className="mt-1">
+              Add tasks from WhatsApp by messaging your Twilio number.
+            </CardDescription>
+          </div>
+        </div>
+      </CardHeader>
+
+      {linkedPhone ? (
+        <CardContent className="space-y-4">
+          <p className="text-sm">
+            Linked number: <span className="font-mono font-medium">{linkedPhone}</span>
+          </p>
+          <div className="rounded-lg border border-border bg-muted/40">
+            <button
+              type="button"
+              onClick={() => setCommandsOpen((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <span>Available commands</span>
+              {commandsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </button>
+            {commandsOpen && (
+              <div className="px-3 pb-3 border-t border-border space-y-1 mt-2">
+                {[
+                  ["add <title>", "Create a task"],
+                  ["add <title> | high", "Create with priority"],
+                  ["add <title> | high | due friday", "Create with due date"],
+                  ["list", "Show your 5 most recent open tasks"],
+                  ["help", "Show all commands"],
+                ].map(([cmd, desc]) => (
+                  <div key={cmd} className="flex gap-3 text-xs">
+                    <code className="shrink-0 font-mono text-foreground">{cmd}</code>
+                    <span className="text-muted-foreground">{desc}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="wa-phone">Your WhatsApp number</Label>
+              <Input
+                id="wa-phone"
+                placeholder="+1234567890"
+                {...register("phone")}
+              />
+              {errors.phone && <p className="text-xs text-red-500">{errors.phone.message}</p>}
+              <p className="text-xs text-muted-foreground">International format with country code, e.g. +1234567890</p>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Saving…" : "Connect WhatsApp"}
+            </Button>
+          </CardFooter>
+        </form>
+      )}
+
+      {linkedPhone && (
+        <CardFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={disconnect}
+            disabled={disconnecting}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+            Disconnect
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
+  );
+}
 
 export default function SettingsPage() {
   const [hasToken, setHasToken] = useState(false);
@@ -185,6 +327,8 @@ export default function SettingsPage() {
           </CardFooter>
         </form>
       </Card>
+
+      <WhatsappCard />
     </div>
   );
 }

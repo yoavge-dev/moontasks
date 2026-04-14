@@ -29,6 +29,7 @@ model User {
   actorNotifications Notification[]   @relation("NotificationActor")
   sentInvites        TeamInvite[]
   competitors        Competitor[]
+  libraryWidgets     LibraryWidget[]
 }
 
 model Competitor {
@@ -60,6 +61,27 @@ model CompetitorSnapshot {
   @@index([competitorId])
 }
 
+model LibraryWidget {
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  category      String
+  hypothesis    String
+  targetKpi     String
+  status        String   @default("active")
+  screenshotUrl String?
+  figmaUrl      String?
+  createdById   String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
+  @@index([category])
+  @@index([status])
+}
+
 model UserSettings {
   id             String  @id @default(cuid())
   userId         String  @unique
@@ -69,6 +91,7 @@ model UserSettings {
   calendarUrl    String?
   slackToken     String?
   slackChannelId String?
+  whatsappPhone  String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

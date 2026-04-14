@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -16,6 +16,7 @@ const navItems = [
 const abNavItems = [
   { href: "/ab-tests", label: "All Experiments", icon: FlaskConical, exact: true },
   { href: "/roadmaps", label: "Roadmaps", icon: Map },
+  { href: "/library", label: "Widget Library", icon: BookOpen },
 ];
 
 export function Sidebar() {
