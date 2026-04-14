@@ -8,6 +8,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { TaskStatusBadge } from "@/components/tasks/TaskStatusBadge";
 import { TaskPriorityBadge } from "@/components/tasks/TaskPriorityBadge";
 import { JiraDashboardPanel, JiraStatCard } from "@/components/dashboard/JiraDashboardPanel";
+import { JiraSetupBanner } from "@/components/dashboard/JiraSetupBanner";
 import { CheckSquare, Clock, FlaskConical, Users, Plus, PartyPopper } from "lucide-react";
 import { format, isToday } from "date-fns";
 
@@ -70,6 +71,9 @@ export default async function DashboardPage() {
           New Task
         </LinkButton>
       </div>
+
+      {/* Jira setup prompt — only shown when not connected */}
+      {!hasJira && <JiraSetupBanner />}
 
       {/* Stat cards — Jira card appends itself if connected */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
