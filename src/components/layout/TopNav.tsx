@@ -3,7 +3,8 @@
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, Menu, LogOut, Settings } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, Menu, LogOut, Settings, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 import { NotificationBell } from "./NotificationBell";
 import {
   DropdownMenu,
@@ -141,6 +142,18 @@ export function TopNav() {
             <DropdownMenuItem onClick={() => router.push("/settings")} className="cursor-pointer">
               <Settings className="h-4 w-4 mr-2" />
               Settings
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() => {
+                const name = user?.name ?? user?.email ?? "";
+                const url = `${window.location.origin}/join${name ? `?from=${encodeURIComponent(name)}` : ""}`;
+                navigator.clipboard.writeText(url);
+                toast.success("Invite link copied!");
+              }}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Invite a colleague
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
