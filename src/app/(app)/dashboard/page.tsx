@@ -143,6 +143,11 @@ export default async function DashboardPage() {
                   <Link key={task.id} href={`/tasks/${task.id}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
                     <TaskStatusBadge status={task.status} />
                     <span className="text-sm flex-1 truncate">{task.title}</span>
+                    {task.project && (
+                      <span className="shrink-0 text-[11px] font-semibold px-2 py-0.5 rounded-sm bg-[#e3f0ff] text-[#1e6ec1]">
+                        {task.project.name}
+                      </span>
+                    )}
                     <span className="text-xs text-muted-foreground shrink-0">
                       {isToday(new Date(task.updatedAt)) ? "Today" : format(new Date(task.updatedAt), "MMM d")}
                     </span>
