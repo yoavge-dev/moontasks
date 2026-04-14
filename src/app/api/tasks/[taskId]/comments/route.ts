@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { createNotification } from "@/lib/notifications";
 
 const CommentSchema = z.object({
   body: z.string().min(1, "Comment cannot be empty").max(2000),
@@ -45,6 +46,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ taskId:
       data: { body: parsed.data.body, taskId, authorId: userId },
       include: { author: { select: { id: true, name: true, email: true } } },
     });
+
+    // Notify task owner and assignee (skip the commenter)
+    const notifyIds = new Set<string>();
+    notifyIds.add(task.ownerId);
+    if (task.assigneeId) notifyIds.add(task.assigneeId);
+    notifyIds.delete(userId); // don't notify yourself
+
+    const actorName = comment.author.name ?? comment.author.email;
+    await Promise.all(
+      [...notifyIds].map((recipientId) =>
+        createNotification({
+          userId: recipientId,
+          actorId: userId,
+          type: "comment",
+          title: `${actorName} commented on "${task.title}"`,
+          body: parsed.data.body.slice(0, 100),
+          link: `/tasks/${taskId}`,
+        })
+      )
+    );
 
     return NextResponse.json({ data: comment }, { status: 201 });
   } catch {

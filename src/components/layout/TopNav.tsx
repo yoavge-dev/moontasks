@@ -4,6 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, Menu, LogOut, Settings } from "lucide-react";
+import { NotificationBell } from "./NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -107,8 +108,9 @@ export function TopNav() {
 
       <div className="flex-1" />
 
-      {/* Right side: Settings + User menu */}
+      {/* Right side: Notifications + Settings + User menu */}
       <div className="flex items-center gap-1">
+        <NotificationBell />
         <Link
           href="/settings"
           className={cn(

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TaskUpdateSchema } from "@/lib/validators/task";
+import { createNotification } from "@/lib/notifications";
 
 async function getTask(taskId: string, userId: string) {
   return prisma.task.findFirst({
@@ -70,6 +71,21 @@ export async function PUT(req: Request, { params }: { params: Promise<{ taskId: 
         project: { select: { id: true, name: true } },
       },
     });
+
+    // Notify newly assigned user
+    const newAssigneeId = parsed.data.assigneeId;
+    if (newAssigneeId && newAssigneeId !== task.assigneeId) {
+      const actorName = (session.user as { name?: string; email?: string }).name
+        ?? (session.user as { email?: string }).email
+        ?? "Someone";
+      await createNotification({
+        userId: newAssigneeId,
+        actorId: userId,
+        type: "assigned",
+        title: `${actorName} assigned you "${task.title}"`,
+        link: `/tasks/${taskId}`,
+      });
+    }
 
     return NextResponse.json({ data: updated });
   } catch {
