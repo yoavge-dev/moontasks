@@ -84,6 +84,13 @@ model Task {
   project     Project?         @relation(fields: [projectId], references: [id])
   comments    Comment[]
   attachments TaskAttachment[]
+
+  @@index([ownerId])
+  @@index([assigneeId])
+  @@index([teamId])
+  @@index([projectId])
+  @@index([status])
+  @@index([dueDate])
 }
 
 model Comment {
@@ -96,6 +103,8 @@ model Comment {
 
   task   Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 model TaskAttachment {
@@ -111,6 +120,8 @@ model TaskAttachment {
 
   task       Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   uploadedBy User @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 model Project {
@@ -142,6 +153,8 @@ model RoadmapItem {
   updatedAt   DateTime @updatedAt
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
 }
 
 model ABTest {
@@ -161,6 +174,9 @@ model ABTest {
   team     Team?       @relation(fields: [teamId], references: [id])
   project  Project?    @relation(fields: [projectId], references: [id])
   variants ABVariant[]
+
+  @@index([ownerId])
+  @@index([projectId])
 }
 
 model ABVariant {
@@ -172,6 +188,8 @@ model ABVariant {
 
   test    ABTest     @relation(fields: [testId], references: [id], onDelete: Cascade)
   metrics ABMetric[]
+
+  @@index([testId])
 }
 
 model ABMetric {
