@@ -261,7 +261,7 @@ export default function SettingsPage() {
               </Label>
               <Input
                 id="calendarUrl"
-                placeholder="https://calendar.google.com/calendar/ical/..."
+                placeholder="https://calendar.google.com/calendar/ical/... or any iCal URL"
                 {...calRegister("calendarUrl")}
               />
               {calErrors.calendarUrl && <p className="text-xs text-red-500">{calErrors.calendarUrl.message}</p>}

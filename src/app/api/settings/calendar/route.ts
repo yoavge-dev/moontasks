@@ -17,9 +17,7 @@ export async function GET() {
 }
 
 const Schema = z.object({
-  calendarUrl: z.string().url("Must be a valid URL").includes("calendar.google.com", {
-    message: "Must be a Google Calendar iCal URL",
-  }),
+  calendarUrl: z.string().url("Must be a valid URL"),
 });
 
 export async function PUT(req: Request) {
