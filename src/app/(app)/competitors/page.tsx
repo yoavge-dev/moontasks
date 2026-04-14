@@ -51,7 +51,9 @@ export default function CompetitorsPage() {
     if (!res.ok) { toast.error(json.error ?? "Failed to add"); return; }
     setCompetitors((prev) => [json.data, ...prev]);
     setName(""); setUrl("");
-    toast.success(`${json.data.name} added — first check runs tonight`);
+    toast.success(`${json.data.name} added`);
+    // Reload after 5s to pick up the baseline snapshot taken in the background
+    setTimeout(() => load(), 5000);
   };
 
   const remove = async (id: string) => {
@@ -122,11 +124,11 @@ export default function CompetitorsPage() {
                           className="text-xs text-muted-foreground hover:text-primary flex items-center gap-0.5 truncate max-w-xs">
                           {c.url} <ExternalLink className="h-3 w-3 shrink-0" />
                         </a>
-                        <span className="text-xs text-muted-foreground ml-auto shrink-0">
-                          {latest
-                            ? `Last checked ${formatDistanceToNow(new Date(latest.createdAt), { addSuffix: true })}`
-                            : "First check runs tonight"}
-                        </span>
+                        {latest && (
+                          <span className="text-xs text-muted-foreground ml-auto shrink-0">
+                            Last checked {formatDistanceToNow(new Date(latest.createdAt), { addSuffix: true })}
+                          </span>
+                        )}
                       </div>
 
                       {latest?.hasChanges && latest.changesSince && (
