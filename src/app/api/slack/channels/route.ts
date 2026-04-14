@@ -23,8 +23,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const channels = (json.channels as { id: string; name: string; is_member: boolean }[])
-    .filter((c) => c.is_member)
+  const channels = (json.channels as { id: string; name: string }[])
     .map((c) => ({ id: c.id, name: c.name }))
     .sort((a, b) => a.name.localeCompare(b.name));
 
