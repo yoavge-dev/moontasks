@@ -3,7 +3,7 @@ import { prisma } from "./prisma";
 interface CreateNotificationInput {
   userId: string;
   actorId?: string;
-  type: "comment" | "assigned";
+  type: "comment" | "assigned" | "mention";
   title: string;
   body?: string;
   link?: string;
