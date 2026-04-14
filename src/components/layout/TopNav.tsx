@@ -4,7 +4,7 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
-import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, Menu, LogOut, Settings, UserPlus } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, Menu, LogOut, Settings, UserPlus, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { NotificationBell } from "./NotificationBell";
 import {
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/tasks", label: "My Tasks", icon: CheckSquare },
+  { href: "/weekly-summary", label: "Weekly Summary", icon: ClipboardList },
   { href: "/team", label: "Team", icon: Users },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/ab-tests", label: "All Experiments", icon: FlaskConical, exact: true },
