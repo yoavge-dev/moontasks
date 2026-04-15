@@ -29,11 +29,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       const { put } = await import("@vercel/blob");
       const blob = await put(`library/${id}/${storedName}`, file, { access: "public" });
       screenshotUrl = blob.url;
-    } else if (process.env.VERCEL) {
-      return NextResponse.json(
-        { error: "Screenshot storage not configured — add BLOB_READ_WRITE_TOKEN in Vercel environment variables" },
-        { status: 503 }
-      );
     } else {
       const { writeFile, mkdir } = await import("fs/promises");
       const uploadDir = path.join(process.cwd(), "public", "uploads", "library");
