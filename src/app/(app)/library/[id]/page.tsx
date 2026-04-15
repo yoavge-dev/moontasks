@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Trash2, Lightbulb, Target, User, MapPin, Monitor } from "lucide-react";
+import { ArrowLeft, ExternalLink, Trash2, Lightbulb, Target, User, MapPin, Monitor, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
@@ -12,6 +12,7 @@ import { Pencil } from "lucide-react";
 import { STATUS_STYLES } from "@/lib/library-constants";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { TransformWrapper, TransformComponent } from "react-zoom-pan-pinch";
 
 type Widget = {
   id: string;
@@ -140,8 +141,47 @@ export default function LibraryWidgetPage() {
 
       {/* Screenshot */}
       {widget.screenshotUrl && (
-        <div className="rounded-xl overflow-hidden border border-border aspect-video relative bg-muted">
-          <Image src={widget.screenshotUrl} alt={widget.name} fill className="object-cover" />
+        <div className="rounded-xl overflow-hidden border border-border bg-muted relative">
+          <TransformWrapper minScale={0.5} maxScale={4} centerOnInit>
+            {({ zoomIn, zoomOut, resetTransform }) => (
+              <>
+                {/* Controls */}
+                <div className="absolute top-3 right-3 z-10 flex items-center gap-1 bg-background/80 backdrop-blur-sm rounded-lg border border-border p-1">
+                  <button
+                    onClick={() => zoomIn()}
+                    className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                    title="Zoom in"
+                  >
+                    <ZoomIn className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => zoomOut()}
+                    className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                    title="Zoom out"
+                  >
+                    <ZoomOut className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    onClick={() => resetTransform()}
+                    className="p-1.5 rounded hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                    title="Reset"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <TransformComponent
+                  wrapperStyle={{ width: "100%", cursor: "grab" }}
+                  contentStyle={{ width: "100%" }}
+                >
+                  <img
+                    src={widget.screenshotUrl!}
+                    alt={widget.name}
+                    className="w-full h-auto block"
+                  />
+                </TransformComponent>
+              </>
+            )}
+          </TransformWrapper>
         </div>
       )}
 
