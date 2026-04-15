@@ -8,6 +8,7 @@ import { ArrowLeft, ExternalLink, Trash2, Lightbulb, Target, User, MapPin, Monit
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
+import { Pencil } from "lucide-react";
 import { STATUS_STYLES } from "@/lib/library-constants";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
@@ -110,6 +111,10 @@ export default function LibraryWidgetPage() {
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
+          <LinkButton href={`/library/${widget.id}/edit`} variant="outline" size="sm">
+            <Pencil className="h-3.5 w-3.5 mr-1.5" />
+            Edit
+          </LinkButton>
           {widget.figmaUrl && (
             <a
               href={widget.figmaUrl}
