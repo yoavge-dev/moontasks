@@ -12,6 +12,8 @@ const CreateSchema = z.object({
   targetKpi: z.string().min(1, "Target KPI is required"),
   status: z.enum(["draft", "active", "deprecated"]).default("active"),
   figmaUrl: z.string().url("Enter a valid URL").optional().or(z.literal("")),
+  placement: z.string().optional(),
+  platform: z.string().optional(),
 });
 
 export async function GET(req: Request) {
@@ -45,11 +47,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
-  const { figmaUrl, ...rest } = parsed.data;
+  const { figmaUrl, placement, platform, ...rest } = parsed.data;
   const widget = await prisma.libraryWidget.create({
     data: {
       ...rest,
       figmaUrl: figmaUrl || null,
+      placement: placement || null,
+      platform: platform || null,
       createdById: userId,
     },
     include: { createdBy: { select: { id: true, name: true, email: true } } },

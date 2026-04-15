@@ -26,6 +26,19 @@ export const WIDGET_STATUSES = [
   { value: "deprecated", label: "Deprecated" },
 ] as const;
 
+export const WIDGET_PLACEMENTS = [
+  "Above the fold",
+  "Chart",
+  "Below the chart",
+  "Other",
+] as const;
+
+export const WIDGET_PLATFORMS = [
+  "Desktop & Mobile",
+  "Desktop only",
+  "Mobile only",
+] as const;
+
 export const STATUS_STYLES: Record<string, string> = {
   active: "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400",
   draft: "bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400",

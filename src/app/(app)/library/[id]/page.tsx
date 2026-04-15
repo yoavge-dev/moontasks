@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Trash2, Lightbulb, Target, User } from "lucide-react";
+import { ArrowLeft, ExternalLink, Trash2, Lightbulb, Target, User, MapPin, Monitor } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
@@ -22,6 +22,8 @@ type Widget = {
   status: string;
   screenshotUrl: string | null;
   figmaUrl: string | null;
+  placement: string | null;
+  platform: string | null;
   createdBy: { id: string; name: string | null; email: string };
   createdAt: string;
 };
@@ -90,6 +92,16 @@ export default function LibraryWidgetPage() {
               <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">
                 {widget.category}
               </span>
+              {widget.placement && (
+                <span className="text-xs font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />{widget.placement}
+                </span>
+              )}
+              {widget.platform && (
+                <span className="text-xs font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <Monitor className="h-3 w-3" />{widget.platform}
+                </span>
+              )}
               <span className="text-xs text-muted-foreground/60">
                 Added by {widget.createdBy.name ?? widget.createdBy.email} · {format(new Date(widget.createdAt), "MMM d, yyyy")}
               </span>

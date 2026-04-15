@@ -14,7 +14,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { WIDGET_CATEGORIES, WIDGET_KPIS, WIDGET_STATUSES } from "@/lib/library-constants";
+import { WIDGET_CATEGORIES, WIDGET_KPIS, WIDGET_STATUSES, WIDGET_PLACEMENTS, WIDGET_PLATFORMS } from "@/lib/library-constants";
 import { cn } from "@/lib/utils";
 
 const schema = z.object({
@@ -25,6 +25,8 @@ const schema = z.object({
   targetKpi: z.string().min(1, "Target KPI is required"),
   status: z.enum(["draft", "active", "deprecated"]),
   figmaUrl: z.string().url("Enter a valid URL").optional().or(z.literal("")),
+  placement: z.string().optional(),
+  platform: z.string().optional(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -160,6 +162,36 @@ export default function NewLibraryWidgetPage() {
                 >
                   {WIDGET_STATUSES.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="placement">Placement</Label>
+                <select
+                  id="placement"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  {...register("placement")}
+                >
+                  <option value="">Select placement</option>
+                  {WIDGET_PLACEMENTS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="platform">Platform</Label>
+                <select
+                  id="platform"
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                  {...register("platform")}
+                >
+                  <option value="">Select platform</option>
+                  {WIDGET_PLATFORMS.map((p) => (
+                    <option key={p} value={p}>{p}</option>
                   ))}
                 </select>
               </div>

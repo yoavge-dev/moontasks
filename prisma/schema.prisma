@@ -71,6 +71,8 @@ model LibraryWidget {
   status        String   @default("active")
   screenshotUrl String?
   figmaUrl      String?
+  placement     String?
+  platform      String?
   createdById   String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
