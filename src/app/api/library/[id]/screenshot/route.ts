@@ -16,11 +16,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
   try {
     const formData = await req.formData();
-    const file = formData.get("file") as File | null;
+    const file = formData.get("file") as File | Blob | null;
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
     if (file.size > MAX_SIZE) return NextResponse.json({ error: "File exceeds 10 MB limit" }, { status: 413 });
 
-    const ext = path.extname(file.name);
+    const fileName = file instanceof File ? file.name : "screenshot";
+    const ext = path.extname(fileName) || ".png";
     const storedName = `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`;
     let screenshotUrl: string;
 
@@ -45,7 +46,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     return NextResponse.json({ data: updated });
   } catch (err) {
-    console.error("Screenshot upload error:", err);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("Screenshot upload error:", message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
