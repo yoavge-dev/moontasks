@@ -91,13 +91,24 @@ export default function NewLibraryWidgetPage() {
     if (screenshot.type === "file") {
       const fd = new FormData();
       fd.append("file", screenshot.file);
-      await fetch(`/api/library/${widgetId}/screenshot`, { method: "POST", body: fd });
+      const uploadRes = await fetch(`/api/library/${widgetId}/screenshot`, { method: "POST", body: fd });
+      if (!uploadRes.ok) {
+        const uploadJson = await uploadRes.json().catch(() => ({}));
+        toast.error(uploadJson.error ?? "Screenshot upload failed — try editing the widget to add it");
+        router.push(`/library/${widgetId}`);
+        return;
+      }
     } else if (screenshot.type === "figma") {
-      await fetch(`/api/library/${widgetId}/screenshot/figma`, {
+      const uploadRes = await fetch(`/api/library/${widgetId}/screenshot/figma`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageUrl: screenshot.imageUrl }),
       });
+      if (!uploadRes.ok) {
+        toast.error("Figma screenshot failed — try editing the widget to add it");
+        router.push(`/library/${widgetId}`);
+        return;
+      }
     }
 
     toast.success("Widget added to library");
@@ -240,7 +251,7 @@ export default function NewLibraryWidgetPage() {
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => { setScreenshotTab(tab); clearScreenshot(); }}
+                  onClick={() => { if (tab !== screenshotTab) { setScreenshotTab(tab); clearScreenshot(); } }}
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
                     screenshotTab === tab
