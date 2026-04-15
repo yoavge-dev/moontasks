@@ -92,6 +92,7 @@ model UserSettings {
   slackToken     String?
   slackChannelId String?
   whatsappPhone  String?
+  figmaToken     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -7,7 +7,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import Image from "next/image";
-import { Upload, X, ArrowLeft } from "lucide-react";
+import { Upload, X, ArrowLeft, PenTool, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WIDGET_CATEGORIES, WIDGET_KPIS, WIDGET_STATUSES } from "@/lib/library-constants";
+import { cn } from "@/lib/utils";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -27,13 +28,20 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
+type ScreenshotSource =
+  | { type: "none" }
+  | { type: "file"; file: File; preview: string }
+  | { type: "figma"; imageUrl: string; frameUrl: string };
+
 export default function NewLibraryWidgetPage() {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
-  const [file, setFile] = useState<File | null>(null);
+  const [screenshotTab, setScreenshotTab] = useState<"upload" | "figma">("upload");
+  const [screenshot, setScreenshot] = useState<ScreenshotSource>({ type: "none" });
+  const [figmaFrameUrl, setFigmaFrameUrl] = useState("");
+  const [figmaLoading, setFigmaLoading] = useState(false);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormValues>({
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { status: "active", category: "", targetKpi: "" },
   });
@@ -41,9 +49,31 @@ export default function NewLibraryWidgetPage() {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (!f) return;
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
+    setScreenshot({ type: "file", file: f, preview: URL.createObjectURL(f) });
   };
+
+  const importFromFigma = async () => {
+    if (!figmaFrameUrl) return;
+    setFigmaLoading(true);
+    const res = await fetch(`/api/library/figma?url=${encodeURIComponent(figmaFrameUrl)}`);
+    const json = await res.json();
+    if (!res.ok) { toast.error(json.error ?? "Failed to import from Figma"); setFigmaLoading(false); return; }
+    const { name, imageUrl } = json.data;
+    setScreenshot({ type: "figma", imageUrl, frameUrl: figmaFrameUrl });
+    setValue("name", name, { shouldValidate: true });
+    setValue("figmaUrl", figmaFrameUrl);
+    setFigmaLoading(false);
+    toast.success(`Imported "${name}" from Figma`);
+  };
+
+  const clearScreenshot = () => {
+    setScreenshot({ type: "none" });
+    if (fileRef.current) fileRef.current.value = "";
+  };
+
+  const previewUrl = screenshot.type === "file" ? screenshot.preview
+    : screenshot.type === "figma" ? screenshot.imageUrl
+    : null;
 
   const onSubmit = async (values: FormValues) => {
     const res = await fetch("/api/library", {
@@ -56,12 +86,16 @@ export default function NewLibraryWidgetPage() {
 
     const widgetId = json.data.id;
 
-    // Upload screenshot if provided
-    if (file) {
+    if (screenshot.type === "file") {
       const fd = new FormData();
-      fd.append("file", file);
-      const uploadRes = await fetch(`/api/library/${widgetId}/screenshot`, { method: "POST", body: fd });
-      if (!uploadRes.ok) toast.error("Widget created but screenshot upload failed");
+      fd.append("file", screenshot.file);
+      await fetch(`/api/library/${widgetId}/screenshot`, { method: "POST", body: fd });
+    } else if (screenshot.type === "figma") {
+      await fetch(`/api/library/${widgetId}/screenshot/figma`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: screenshot.imageUrl }),
+      });
     }
 
     toast.success("Widget added to library");
@@ -168,46 +202,85 @@ export default function NewLibraryWidgetPage() {
         <Card>
           <CardHeader><CardTitle className="text-base">Assets</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            {/* Screenshot upload */}
-            <div className="space-y-2">
-              <Label>Screenshot</Label>
-              {preview ? (
-                <div className="relative rounded-lg overflow-hidden border border-border aspect-video bg-muted">
-                  <Image src={preview} alt="Preview" fill className="object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => { setPreview(null); setFile(null); if (fileRef.current) fileRef.current.value = ""; }}
-                    className="absolute top-2 right-2 bg-background/80 rounded-full p-1 hover:bg-background transition-colors"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ) : (
+            {/* Tab switcher */}
+            <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
+              {(["upload", "figma"] as const).map((tab) => (
                 <button
+                  key={tab}
                   type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="w-full rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors p-8 flex flex-col items-center gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => { setScreenshotTab(tab); clearScreenshot(); }}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+                    screenshotTab === tab
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
                 >
-                  <Upload className="h-6 w-6" />
-                  <span className="text-sm">Click to upload screenshot</span>
-                  <span className="text-xs opacity-60">PNG, JPG, WebP up to 10 MB</span>
+                  {tab === "figma" ? <PenTool className="h-3.5 w-3.5" /> : <Upload className="h-3.5 w-3.5" />}
+                  {tab === "upload" ? "Upload" : "Import from Figma"}
                 </button>
-              )}
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={onFileChange}
-              />
+              ))}
             </div>
 
-            {/* Figma URL */}
+            {/* Preview */}
+            {previewUrl ? (
+              <div className="relative rounded-lg overflow-hidden border border-border aspect-video bg-muted">
+                <Image src={previewUrl} alt="Preview" fill className="object-cover" unoptimized />
+                <button
+                  type="button"
+                  onClick={clearScreenshot}
+                  className="absolute top-2 right-2 bg-background/80 rounded-full p-1 hover:bg-background transition-colors"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : screenshotTab === "upload" ? (
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="w-full rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors p-8 flex flex-col items-center gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <Upload className="h-6 w-6" />
+                <span className="text-sm">Click to upload screenshot</span>
+                <span className="text-xs opacity-60">PNG, JPG, WebP up to 10 MB</span>
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="https://www.figma.com/design/..."
+                    value={figmaFrameUrl}
+                    onChange={(e) => setFigmaFrameUrl(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={importFromFigma}
+                    disabled={figmaLoading || !figmaFrameUrl}
+                  >
+                    {figmaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Right-click a frame in Figma → Copy link → paste here. Name is auto-filled.
+                </p>
+              </div>
+            )}
+
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onFileChange}
+            />
+
+            {/* Figma design link */}
             <div className="space-y-1">
-              <Label htmlFor="figmaUrl">Figma link</Label>
+              <Label htmlFor="figmaUrl">Figma design link</Label>
               <Input
                 id="figmaUrl"
-                placeholder="https://www.figma.com/file/..."
+                placeholder="https://www.figma.com/design/..."
                 {...register("figmaUrl")}
               />
               {errors.figmaUrl && <p className="text-xs text-red-500">{errors.figmaUrl.message}</p>}

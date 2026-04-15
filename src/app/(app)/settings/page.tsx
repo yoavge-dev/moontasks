@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, ExternalLink, Trash2, ChevronDown, ChevronUp, MessageCircle } from "lucide-react";
+import { CheckCircle2, ExternalLink, Trash2, ChevronDown, ChevronUp, MessageCircle, PenTool } from "lucide-react";
 
 const schema = z.object({
   jiraDomain: z.string().min(1, "Domain is required"),
@@ -329,6 +329,131 @@ export default function SettingsPage() {
       </Card>
 
       <WhatsappCard />
+      <FigmaCard />
     </div>
+  );
+}
+
+function FigmaCard() {
+  const [hasToken, setHasToken] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
+  const [token, setToken] = useState("");
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings/figma")
+      .then((r) => r.json())
+      .then((json) => { setHasToken(json.data?.hasToken ?? false); setLoading(false); });
+  }, []);
+
+  const save = async () => {
+    if (!token) return;
+    setSaving(true);
+    const res = await fetch("/api/settings/figma", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token }),
+    });
+    const json = await res.json();
+    if (!res.ok) { toast.error(json.error ?? "Failed to save"); setSaving(false); return; }
+    setHasToken(true);
+    setToken("");
+    setSaving(false);
+    toast.success("Figma connected!");
+  };
+
+  const disconnect = async () => {
+    setDisconnecting(true);
+    await fetch("/api/settings/figma", { method: "DELETE" });
+    setHasToken(false);
+    setDisconnecting(false);
+    toast.success("Figma disconnected");
+  };
+
+  if (loading) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <PenTool className="h-4 w-4" />
+          Figma
+          {hasToken && (
+            <span className="inline-flex items-center gap-1 text-xs font-normal text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+              <CheckCircle2 className="h-3 w-3" />
+              Connected
+            </span>
+          )}
+        </CardTitle>
+        <CardDescription>Import frames from Figma directly into the Widget Library.</CardDescription>
+      </CardHeader>
+
+      {!hasToken ? (
+        <>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="figma-token">
+                Personal access token
+              </Label>
+              <Input
+                id="figma-token"
+                type="password"
+                placeholder="figd_..."
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+              />
+              <div className="rounded-lg border border-border bg-muted/40 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setGuideOpen((v) => !v)}
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <span>How to get your Figma token</span>
+                  {guideOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </button>
+                {guideOpen && (
+                  <div className="px-3 pb-3 border-t border-border">
+                    <ol className="mt-2 space-y-2 text-xs text-muted-foreground list-none">
+                      <li className="flex gap-2">
+                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">1</span>
+                        <span>In Figma, go to <strong className="text-foreground">Account Settings</strong> (click your avatar)</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">2</span>
+                        <span>Scroll to <strong className="text-foreground">Personal access tokens</strong> → Generate new token</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="shrink-0 h-4 w-4 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-[10px]">3</span>
+                        <span>Copy the token (starts with <code className="bg-muted px-1 rounded">figd_</code>) and paste above</span>
+                      </li>
+                    </ol>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button onClick={save} disabled={saving || !token}>
+              {saving ? "Connecting…" : "Connect Figma"}
+            </Button>
+          </CardFooter>
+        </>
+      ) : (
+        <CardFooter>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={disconnect}
+            disabled={disconnecting}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+            Disconnect
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
   );
 }
