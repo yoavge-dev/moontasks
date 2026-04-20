@@ -5,7 +5,7 @@ import { Link2 } from "lucide-react";
 export function ProjectUrlLink({ url }: { url: string }) {
   return (
     <span
-      className="inline-flex items-center gap-1 text-[11px] text-primary mt-0.5 hover:underline"
+      className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();

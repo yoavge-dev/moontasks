@@ -66,11 +66,15 @@ export default async function ProjectsPage() {
                       {project.description && (
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{project.description}</p>
                       )}
-                      {project.url && <ProjectUrlLink url={project.url} />}
-                      {project.ppcOwner && (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-3 block">
-                          <UserCog className="h-3 w-3" />{project.ppcOwner}
-                        </span>
+                      {(project.url || project.ppcOwner) && (
+                        <div className="flex items-center gap-2 mt-3">
+                          {project.url && <ProjectUrlLink url={project.url} />}
+                          {project.ppcOwner && (
+                            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                              <UserCog className="h-3 w-3" />{project.ppcOwner}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
                     <div className="h-8 w-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
