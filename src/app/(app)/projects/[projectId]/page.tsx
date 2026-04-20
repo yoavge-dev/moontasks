@@ -95,6 +95,7 @@ export default async function ProjectDetailPage({
             name={project.name}
             description={project.description}
             url={project.url}
+            ppcOwner={project.ppcOwner}
             teamName={project.team?.name}
             isOwner={isOwner}
           />

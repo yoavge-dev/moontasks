@@ -193,6 +193,7 @@ model Project {
   name        String
   description String?
   url         String?
+  ppcOwner    String?
   ownerId     String
   teamId      String?
   createdAt   DateTime @default(now())

@@ -8,6 +8,7 @@ const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional().nullable(),
   url: z.string().max(2000).optional().nullable(),
+  ppcOwner: z.string().max(200).optional().nullable(),
 });
 
 export async function GET(_req: Request, { params }: { params: Promise<{ projectId: string }> }) {

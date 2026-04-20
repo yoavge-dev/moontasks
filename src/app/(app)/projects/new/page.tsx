@@ -14,6 +14,7 @@ export default function NewProjectPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [url, setUrl] = useState("");
+  const [ppcOwner, setPpcOwner] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -23,7 +24,7 @@ export default function NewProjectPage() {
     const res = await fetch("/api/projects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, url: url.trim() || undefined }),
+      body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, url: url.trim() || undefined, ppcOwner: ppcOwner.trim() || undefined }),
     });
     const json = await res.json();
     if (!res.ok) { toast.error(json.error ?? "Failed to create"); setSaving(false); return; }
@@ -72,6 +73,15 @@ export default function NewProjectPage() {
                 placeholder="https://…"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="ppcOwner">PPC Owner</Label>
+              <Input
+                id="ppcOwner"
+                placeholder="e.g. Sarah M."
+                value={ppcOwner}
+                onChange={(e) => setPpcOwner(e.target.value)}
               />
             </div>
           </CardContent>

@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Pencil, Check, X, Link2 } from "lucide-react";
+import { Pencil, Check, X, Link2, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,16 +14,18 @@ interface Props {
   name: string;
   description: string | null;
   url?: string | null;
+  ppcOwner?: string | null;
   teamName?: string | null;
   isOwner: boolean;
 }
 
-export function ProjectHeader({ projectId, name, description, url, teamName, isOwner }: Props) {
+export function ProjectHeader({ projectId, name, description, url, ppcOwner, teamName, isOwner }: Props) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(name);
   const [editDesc, setEditDesc] = useState(description ?? "");
   const [editUrl, setEditUrl] = useState(url ?? "");
+  const [editPpcOwner, setEditPpcOwner] = useState(ppcOwner ?? "");
   const [saving, setSaving] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
 
@@ -31,6 +33,7 @@ export function ProjectHeader({ projectId, name, description, url, teamName, isO
     setEditName(name);
     setEditDesc(description ?? "");
     setEditUrl(url ?? "");
+    setEditPpcOwner(ppcOwner ?? "");
     setEditing(true);
     setTimeout(() => nameRef.current?.focus(), 50);
   };
@@ -40,6 +43,7 @@ export function ProjectHeader({ projectId, name, description, url, teamName, isO
     setEditName(name);
     setEditDesc(description ?? "");
     setEditUrl(url ?? "");
+    setEditPpcOwner(ppcOwner ?? "");
   };
 
   const save = async () => {
@@ -49,7 +53,7 @@ export function ProjectHeader({ projectId, name, description, url, teamName, isO
       const res = await fetch(`/api/projects/${projectId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editName.trim(), description: editDesc.trim() || null, url: editUrl.trim() || null }),
+        body: JSON.stringify({ name: editName.trim(), description: editDesc.trim() || null, url: editUrl.trim() || null, ppcOwner: editPpcOwner.trim() || null }),
       });
       const json = await res.json();
       if (!res.ok) { toast.error(json.error ?? "Failed to save"); return; }
@@ -87,6 +91,12 @@ export function ProjectHeader({ projectId, name, description, url, teamName, isO
           placeholder="https://…"
           className="text-sm"
         />
+        <Input
+          value={editPpcOwner}
+          onChange={(e) => setEditPpcOwner(e.target.value)}
+          placeholder="PPC Owner (e.g. Sarah M.)"
+          className="text-sm"
+        />
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={save} disabled={saving || !editName.trim()} className="gap-1.5">
             <Check className="h-3.5 w-3.5" />
@@ -117,7 +127,14 @@ export function ProjectHeader({ projectId, name, description, url, teamName, isO
             {url.replace(/^https?:\/\//, "")}
           </a>
         )}
-        {teamName && <span className="text-xs bg-muted px-2 py-0.5 rounded-full inline-block">{teamName}</span>}
+        <div className="flex items-center gap-2 flex-wrap">
+          {ppcOwner && (
+            <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+              <UserCog className="h-3 w-3" />PPC: {ppcOwner}
+            </span>
+          )}
+          {teamName && <span className="text-xs bg-muted px-2 py-0.5 rounded-full inline-block">{teamName}</span>}
+        </div>
       </div>
       {isOwner && (
         <button
