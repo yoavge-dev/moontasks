@@ -27,6 +27,7 @@ const schema = z.object({
   figmaUrl: z.string().url("Enter a valid URL").optional().or(z.literal("")),
   placement: z.string().optional(),
   platform: z.string().optional(),
+  ppcOwner: z.string().max(200).optional(),
 });
 type FormValues = z.infer<typeof schema>;
 
@@ -176,6 +177,11 @@ export default function NewLibraryWidgetPage() {
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="ppcOwner">PPC Owner</Label>
+              <Input id="ppcOwner" placeholder="e.g. Sarah M." {...register("ppcOwner")} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

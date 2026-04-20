@@ -36,6 +36,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       figmaUrl: body.figmaUrl || null,
       placement: body.placement || null,
       platform: body.platform || null,
+      ppcOwner: body.ppcOwner || null,
     },
     include: { createdBy: { select: { id: true, name: true, email: true } } },
   });

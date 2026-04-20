@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Trash2, Lightbulb, Target, User, MapPin, Monitor, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { ArrowLeft, ExternalLink, Trash2, Lightbulb, Target, User, MapPin, Monitor, ZoomIn, ZoomOut, RotateCcw, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { LinkButton } from "@/components/ui/link-button";
@@ -26,6 +26,7 @@ type Widget = {
   figmaUrl: string | null;
   placement: string | null;
   platform: string | null;
+  ppcOwner: string | null;
   createdBy: { id: string; name: string | null; email: string };
   createdAt: string;
 };
@@ -102,6 +103,11 @@ export default function LibraryWidgetPage() {
               {widget.platform && (
                 <span className="text-xs font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Monitor className="h-3 w-3" />{widget.platform}
+                </span>
+              )}
+              {widget.ppcOwner && (
+                <span className="text-xs font-medium bg-muted text-muted-foreground px-2 py-0.5 rounded-full flex items-center gap-1">
+                  <UserCog className="h-3 w-3" />PPC: {widget.ppcOwner}
                 </span>
               )}
               <span className="text-xs text-muted-foreground/60">
