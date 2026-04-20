@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LinkButton } from "@/components/ui/link-button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, FolderKanban, CheckSquare, FlaskConical, MapPin } from "lucide-react";
+import { Plus, FolderKanban, CheckSquare, FlaskConical, MapPin, UserCog } from "lucide-react";
 import { ProjectUrlLink } from "@/components/projects/ProjectUrlLink";
 import { format } from "date-fns";
 
@@ -67,6 +67,11 @@ export default async function ProjectsPage() {
                         <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{project.description}</p>
                       )}
                       {project.url && <ProjectUrlLink url={project.url} />}
+                      {project.ppcOwner && (
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <UserCog className="h-3 w-3" />{project.ppcOwner}
+                        </span>
+                      )}
                     </div>
                     <div className="h-8 w-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
                       <FolderKanban className="h-4 w-4 text-violet-600 dark:text-violet-400" />
