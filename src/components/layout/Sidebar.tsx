@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen, CalendarCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/team", label: "Team", icon: Users },
   { href: "/projects", label: "Projects", icon: FolderKanban },
   { href: "/competitors", label: "Competitors", icon: Radar },
+  { href: "/daily-update", label: "Daily Update", icon: CalendarCheck },
 ];
 
 const abNavItems = [
