@@ -68,7 +68,7 @@ export default async function ProjectsPage() {
                       )}
                       {project.url && <ProjectUrlLink url={project.url} />}
                       {project.ppcOwner && (
-                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-1.5 block">
+                        <span className="inline-flex items-center gap-1 text-xs text-muted-foreground mt-3 block">
                           <UserCog className="h-3 w-3" />{project.ppcOwner}
                         </span>
                       )}
