@@ -17,7 +17,10 @@ export async function GET() {
 
   const competitors = await prisma.competitor.findMany({
     where: { ownerId },
-    include: { snapshots: { orderBy: { createdAt: "desc" }, take: 1 } },
+    include: {
+      snapshots: { orderBy: { createdAt: "desc" }, take: 1 },
+      croAudits: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
     orderBy: { createdAt: "desc" },
   });
 

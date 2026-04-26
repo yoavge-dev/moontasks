@@ -10,7 +10,7 @@ const navItems = [
   { href: "/tasks", label: "My Tasks", icon: CheckSquare },
   { href: "/team", label: "Team", icon: Users },
   { href: "/projects", label: "Projects", icon: FolderKanban },
-  { href: "/competitors", label: "Competitors", icon: Radar },
+  { href: "/competitors", label: "CRO Audit", icon: Radar },
   { href: "/daily-update", label: "Daily Update", icon: CalendarCheck },
 ];
 

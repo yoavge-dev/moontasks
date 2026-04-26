@@ -41,8 +41,23 @@ model Competitor {
 
   owner     User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   snapshots CompetitorSnapshot[]
+  croAudits CroAudit[]
 
   @@index([ownerId])
+}
+
+model CroAudit {
+  id           String   @id @default(cuid())
+  competitorId String
+  score        Int
+  breakdown    String
+  abTests      String
+  findings     String
+  createdAt    DateTime @default(now())
+
+  competitor Competitor @relation(fields: [competitorId], references: [id], onDelete: Cascade)
+
+  @@index([competitorId])
 }
 
 model CompetitorSnapshot {
