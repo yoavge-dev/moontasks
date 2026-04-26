@@ -9,8 +9,19 @@ export interface ExtractedContent {
   sections: string[];
   // Mobile signals
   hasMobileViewport: boolean;
-  hasButtonCtas: boolean;   // <button> elements (better tap targets than <a>)
-  hasAmpOrPwa: boolean;     // AMP or manifest = mobile-first signals
+  hasButtonCtas: boolean;
+  hasAmpOrPwa: boolean;
+  // Visual signals
+  heroImage: boolean;       // img/picture in hero / above-fold area
+  heroVideo: boolean;       // video or embedded video (YouTube/Vimeo) in hero
+  totalImages: number;
+  imagesWithAlt: number;    // images with non-trivial alt text
+  // Engagement / trust signals
+  hasForm: boolean;
+  hasEmailCapture: boolean; // input[type=email]
+  hasChat: boolean;         // live chat widget detected
+  hasFaq: boolean;          // FAQ section detected
+  hasSchema: boolean;       // JSON-LD / schema markup
 }
 
 function stripTags(html: string): string {
@@ -34,14 +45,14 @@ function extractMeta(html: string, name: string): string {
   return m ? m[1].trim() : "";
 }
 
-export function extractContent(html: string, url: string): ExtractedContent {
+export function extractContent(html: string, _url: string): ExtractedContent {
   // Nav links
   const navSection = html.match(/<nav[\s\S]*?<\/nav>/i)?.[0] ?? "";
   const nav = extractTag(navSection || html, "a")
     .filter((t) => t.length < 60)
     .slice(0, 20);
 
-  // CTA buttons
+  // CTA buttons — class/id based detection
   const ctaRe = /<(?:a|button)[^>]*(?:class|id)[^>]*(?:cta|btn|button|primary|hero)[^>]*>([\s\S]*?)<\/(?:a|button)>/gi;
   const ctas: string[] = [];
   let ctaM;
@@ -55,17 +66,53 @@ export function extractContent(html: string, url: string): ExtractedContent {
   const pricingSection = html.match(/<(?:section|div)[^>]*(?:pricing|plans)[^>]*>[\s\S]{0,3000}/i)?.[0] ?? "";
   const pricingMatches = [...new Set((pricingSection || html).match(pricingRe) ?? [])].slice(0, 30);
 
-  // Key section headings context
+  // Section headings
   const sections = extractTag(html, "h2").concat(extractTag(html, "h3")).slice(0, 15);
 
-  // Mobile signals
-  const hasMobileViewport = /<meta[^>]+name=["']viewport["'][^>]*content=["'][^"']*width=device-width[^"']*["']/i.test(html)
-    || /<meta[^>]+content=["'][^"']*width=device-width[^"']*["'][^>]*name=["']viewport["']/i.test(html);
+  // ── Mobile signals ──────────────────────────────────────────────────────
+  const hasMobileViewport =
+    /<meta[^>]+name=["']viewport["'][^>]*content=["'][^"']*width=device-width[^"']*["']/i.test(html) ||
+    /<meta[^>]+content=["'][^"']*width=device-width[^"']*["'][^>]*name=["']viewport["']/i.test(html);
 
   const hasButtonCtas = /<button[^>]*>[\s\S]*?<\/button>/i.test(html);
 
-  const hasAmpOrPwa = /\bamp\b/.test(html.slice(0, 200))
-    || /<link[^>]+rel=["']manifest["']/i.test(html);
+  const hasAmpOrPwa =
+    /\bamp\b/.test(html.slice(0, 200)) ||
+    /<link[^>]+rel=["']manifest["']/i.test(html);
+
+  // ── Visual signals ──────────────────────────────────────────────────────
+  // Hero = first ~4000 chars (header/hero section area)
+  const aboveFold = html.slice(0, 4000);
+  const heroSection =
+    html.match(/<(?:header|section|div)[^>]*(?:hero|banner|above|header|jumbotron|masthead)[^>]*>[\s\S]{0,3000}/i)?.[0] ??
+    aboveFold;
+
+  const heroImage =
+    /<img[^>]+>/i.test(heroSection) ||
+    /background-image\s*:\s*url\s*\(/i.test(heroSection.slice(0, 2000));
+
+  const heroVideo =
+    /<video[^>]*>/i.test(heroSection) ||
+    /<iframe[^>]*(?:youtube|vimeo|loom|wistia|vidyard)[^>]*>/i.test(heroSection);
+
+  const allImgs = html.match(/<img[^>]+>/gi) ?? [];
+  const totalImages = allImgs.length;
+  const imagesWithAlt = allImgs.filter((img) => /alt=["'][^"']{3,}["']/i.test(img)).length;
+
+  // ── Engagement / trust signals ──────────────────────────────────────────
+  const hasForm = /<form[^>]*>/i.test(html);
+  const hasEmailCapture =
+    /<input[^>]*type=["']email["'][^>]*>/i.test(html) ||
+    /<input[^>]*placeholder=["'][^"']*email[^"']*["']/i.test(html);
+
+  const hasChat =
+    /intercom|zendesk|freshchat|drift\.com|livechat|crisp\.chat|tidio|tawk\.to|hubspot\.net\/conversations|smartsupp|olark/i.test(html);
+
+  const hasFaq =
+    /\bfaq\b|frequently asked|common questions/i.test(html);
+
+  const hasSchema =
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>/i.test(html);
 
   return {
     title: extractTag(html, "title")[0] ?? "",
@@ -79,6 +126,15 @@ export function extractContent(html: string, url: string): ExtractedContent {
     hasMobileViewport,
     hasButtonCtas,
     hasAmpOrPwa,
+    heroImage,
+    heroVideo,
+    totalImages,
+    imagesWithAlt,
+    hasForm,
+    hasEmailCapture,
+    hasChat,
+    hasFaq,
+    hasSchema,
   };
 }
 
@@ -110,7 +166,6 @@ export function diffContent(prev: ExtractedContent, curr: ExtractedContent): Dif
   if (prev.description !== curr.description && curr.description)
     items.push({ section: "description", type: "changed", value: curr.description, before: prev.description });
 
-  // H1: if both sides have exactly one headline and it changed, show before→after
   if (prev.h1.length === 1 && curr.h1.length === 1 && prev.h1[0] !== curr.h1[0]) {
     items.push({ section: "headline", type: "changed", value: curr.h1[0], before: prev.h1[0] });
   } else {
@@ -120,7 +175,6 @@ export function diffContent(prev: ExtractedContent, curr: ExtractedContent): Dif
       items.push({ section: "headline", type: "removed", value: h });
   }
 
-  // H2: pair removed+added when counts match (likely reworded sections, not restructured)
   const addedH2 = curr.h2.filter((h) => !prev.h2.includes(h));
   const removedH2 = prev.h2.filter((h) => !curr.h2.includes(h));
   if (addedH2.length > 0 && addedH2.length === removedH2.length && addedH2.length <= 3) {
@@ -131,7 +185,6 @@ export function diffContent(prev: ExtractedContent, curr: ExtractedContent): Dif
     for (const h of removedH2) items.push({ section: "sections", type: "removed", value: h });
   }
 
-  // CTAs: single swap shows as before→after
   const addedCta = curr.ctas.filter((c) => !prev.ctas.includes(c));
   const removedCta = prev.ctas.filter((c) => !curr.ctas.includes(c));
   if (addedCta.length === 1 && removedCta.length === 1) {

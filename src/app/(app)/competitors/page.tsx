@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, ExternalLink, Loader2, RefreshCw, Zap, AlertTriangle, BarChart2, GitCompare, X } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Loader2, RefreshCw, Zap, AlertTriangle, BarChart2, GitCompare, X, CheckCircle2, ListTodo, FlaskConical, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, YAxis } from "recharts";
+import { detectFeatureGaps, type FeatureGap } from "@/lib/cro";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,18 +39,20 @@ interface Competitor {
   name: string;
   url: string;
   croAudits: CroAudit[];
+  snapshots?: Array<{ extracted: string }>;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const BREAKDOWN_LABELS: Record<string, string> = {
-  hero: "Hero / Value Prop",
-  cta: "CTA Strength",
-  clarity: "Message Clarity",
+  hero:         "Hero / Value Prop",
+  cta:          "CTA Strength",
+  clarity:      "Message Clarity",
   social_proof: "Social Proof",
-  structure: "Page Structure",
-  urgency: "Urgency Signals",
-  mobile: "Mobile Optimisation",
+  structure:    "Page Structure",
+  urgency:      "Urgency Signals",
+  mobile:       "Mobile Optimisation",
+  visuals:      "Visual Impact",
 };
 
 const STEAL_ADVICE: Record<string, string> = {
@@ -60,6 +63,7 @@ const STEAL_ADVICE: Record<string, string> = {
   structure:    "Their page hierarchy is cleaner. Review how they order sections and whether they use a logical hero → benefits → proof → CTA flow.",
   urgency:      "They reduce friction better — likely 'No credit card required', 'Free trial', or 'Cancel anytime' near their CTA. Add similar reassurance copy.",
   mobile:       "Their mobile experience is more optimised. Check viewport meta, button tap targets, and nav usability on a real mobile device.",
+  visuals:      "They use stronger visual storytelling — hero image, product video, or better alt text coverage. Add a hero visual or short explainer video above the fold.",
 };
 
 const PRIORITY_STYLE = {
@@ -78,6 +82,12 @@ const IMPACT_STYLE = {
   high:   "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   medium: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
   low:    "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+};
+
+const GAP_TYPE_STYLE = {
+  page:    "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+  feature: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+  content: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -101,6 +111,14 @@ function parseAudit(a: CroAudit & { breakdown: string | Record<string, number>; 
     abTests:   typeof a.abTests   === "string" ? JSON.parse(a.abTests)   : a.abTests,
     findings:  typeof a.findings  === "string" ? JSON.parse(a.findings)  : a.findings,
   };
+}
+
+function parseExtracted(raw: string | null | undefined): { nav: string[]; sections: string[]; h2: string[]; title: string } | null {
+  if (!raw) return null;
+  try {
+    const p = JSON.parse(raw);
+    return { nav: p.nav ?? [], sections: p.sections ?? [], h2: p.h2 ?? [], title: p.title ?? "" };
+  } catch { return null; }
 }
 
 // ─── Score ring ───────────────────────────────────────────────────────────────
@@ -186,14 +204,103 @@ function ScoreTrend({ audits }: { audits: CroAudit[] }) {
   );
 }
 
+// ─── This Sprint panel ────────────────────────────────────────────────────────
+
+function SprintPanel({ audit, onCreateAbTest, onAddTask, createdTests, createdTasks, competitorId }: {
+  audit: CroAudit;
+  onCreateAbTest: (test: CroAudit["abTests"][0], key: string) => void;
+  onAddTask: (finding: CroAudit["findings"][0], key: string) => void;
+  createdTests: Set<string>;
+  createdTasks: Set<string>;
+  competitorId: string;
+}) {
+  type QuickWin =
+    | { kind: "test"; item: CroAudit["abTests"][0]; idx: number }
+    | { kind: "task"; item: CroAudit["findings"][0]; idx: number };
+
+  const wins: QuickWin[] = [
+    ...audit.findings
+      .map((f, idx) => ({ kind: "task" as const, item: f, idx }))
+      .filter(({ item }) => item.impact === "high"),
+    ...audit.abTests
+      .map((t, idx) => ({ kind: "test" as const, item: t, idx }))
+      .filter(({ item }) => item.priority === "high" && item.effort === "easy"),
+  ].slice(0, 5);
+
+  if (wins.length === 0) return null;
+
+  return (
+    <Card className="border-violet-200 dark:border-violet-800 bg-violet-50/50 dark:bg-violet-950/20">
+      <CardContent className="pt-4 pb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Zap className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+          <span className="font-bold text-sm text-violet-700 dark:text-violet-300">This Sprint — Top Quick Wins</span>
+          <span className="text-xs text-muted-foreground ml-auto">{wins.length} action{wins.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div className="space-y-2">
+          {wins.map((w) => {
+            if (w.kind === "test") {
+              const key = `${competitorId}-ab-${w.idx}`;
+              const done = createdTests.has(key);
+              return (
+                <div key={key} className="flex items-start gap-2.5 text-sm">
+                  <FlaskConical className="h-3.5 w-3.5 text-violet-500 shrink-0 mt-0.5" />
+                  <span className="flex-1 text-xs leading-relaxed">{w.item.title}</span>
+                  <button
+                    onClick={() => !done && onCreateAbTest(w.item, key)}
+                    disabled={done}
+                    className={cn(
+                      "text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 transition-all",
+                      done
+                        ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
+                        : "text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/30 bg-violet-50 dark:bg-violet-900/20"
+                    )}
+                  >
+                    {done ? "✓ Created" : "→ Create test"}
+                  </button>
+                </div>
+              );
+            } else {
+              const key = `${competitorId}-task-${w.idx}`;
+              const done = createdTasks.has(key);
+              return (
+                <div key={key} className="flex items-start gap-2.5 text-sm">
+                  <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                  <span className="flex-1 text-xs leading-relaxed">{w.item.issue}</span>
+                  <button
+                    onClick={() => !done && onAddTask(w.item, key)}
+                    disabled={done}
+                    className={cn(
+                      "text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 transition-all",
+                      done
+                        ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
+                        : "text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 bg-amber-50 dark:bg-amber-900/20"
+                    )}
+                  >
+                    {done ? "✓ Added" : "→ Add task"}
+                  </button>
+                </div>
+              );
+            }
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 // ─── Single audit results ─────────────────────────────────────────────────────
 
-function AuditResults({ competitor, audit, allAudits, onRerun, loading }: {
+function AuditResults({ competitor, audit, allAudits, onRerun, loading, onCreateAbTest, onAddTask, createdTests, createdTasks }: {
   competitor: Competitor;
   audit: CroAudit;
   allAudits: CroAudit[];
   onRerun: () => void;
   loading: boolean;
+  onCreateAbTest: (test: CroAudit["abTests"][0], key: string) => void;
+  onAddTask: (finding: CroAudit["findings"][0], key: string) => void;
+  createdTests: Set<string>;
+  createdTasks: Set<string>;
 }) {
   return (
     <div className="space-y-5">
@@ -204,6 +311,16 @@ function AuditResults({ competitor, audit, allAudits, onRerun, loading }: {
           {competitor.url.replace(/^https?:\/\//, "")} <ExternalLink className="h-3 w-3" />
         </a>
       </div>
+
+      {/* Sprint quick wins */}
+      <SprintPanel
+        audit={audit}
+        onCreateAbTest={onCreateAbTest}
+        onAddTask={onAddTask}
+        createdTests={createdTests}
+        createdTasks={createdTasks}
+        competitorId={competitor.id}
+      />
 
       {/* Score + breakdown */}
       <Card>
@@ -235,28 +352,40 @@ function AuditResults({ competitor, audit, allAudits, onRerun, loading }: {
       {/* A/B Tests */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-violet-500" />
+          <FlaskConical className="h-4 w-4 text-violet-500" />
           <span className="font-semibold text-sm">A/B Test Quick Wins</span>
           <span className="text-xs text-muted-foreground">({audit.abTests.length})</span>
         </div>
-        {audit.abTests.map((test, i) => (
-          <Card key={i} className="border-l-2 border-l-violet-400">
-            <CardContent className="pt-3 pb-3">
-              <div className="flex items-start justify-between gap-3 mb-1.5">
-                <span className="font-semibold text-sm">{test.title}</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", PRIORITY_STYLE[test.priority])}>{test.priority}</span>
-                  <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", EFFORT_STYLE[test.effort])}>{test.effort}</span>
+        {audit.abTests.map((test, i) => {
+          const key = `${competitor.id}-ab-${i}`;
+          const done = createdTests.has(key);
+          return (
+            <Card key={i} className="border-l-2 border-l-violet-400">
+              <CardContent className="pt-3 pb-3">
+                <div className="flex items-start justify-between gap-3 mb-1.5">
+                  <span className="font-semibold text-sm">{test.title}</span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", PRIORITY_STYLE[test.priority])}>{test.priority}</span>
+                    <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", EFFORT_STYLE[test.effort])}>{test.effort}</span>
+                  </div>
                 </div>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-1.5">{test.hypothesis}</p>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-medium text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded">{test.category}</span>
-                <span className="text-[11px] text-muted-foreground">{test.impact}</span>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                <p className="text-xs text-muted-foreground leading-relaxed mb-2">{test.hypothesis}</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-medium text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded">{test.category}</span>
+                  <span className="text-[11px] text-muted-foreground flex-1">{test.impact}</span>
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => !done && onCreateAbTest(test, key)}
+                    disabled={done}
+                    className={cn("h-6 text-[10px] px-2 gap-1", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}
+                  >
+                    {done ? <><CheckCircle2 className="h-3 w-3" /> Created</> : <><FlaskConical className="h-3 w-3" /> Create A/B Test</>}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       {/* Findings */}
@@ -266,50 +395,122 @@ function AuditResults({ competitor, audit, allAudits, onRerun, loading }: {
           <span className="font-semibold text-sm">Findings</span>
           <span className="text-xs text-muted-foreground">({audit.findings.length})</span>
         </div>
-        {audit.findings.map((f, i) => (
-          <Card key={i}>
+        {audit.findings.map((f, i) => {
+          const key = `${competitor.id}-task-${i}`;
+          const done = createdTasks.has(key);
+          return (
+            <Card key={i}>
+              <CardContent className="pt-3 pb-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{f.category}</span>
+                  <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", IMPACT_STYLE[f.impact])}>{f.impact} impact</span>
+                </div>
+                <p className="text-sm font-medium mb-1">{f.issue}</p>
+                <div className="flex items-start gap-2">
+                  <p className="text-xs text-muted-foreground leading-relaxed flex-1">→ {f.recommendation}</p>
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => !done && onAddTask(f, key)}
+                    disabled={done}
+                    className={cn("h-6 text-[10px] px-2 gap-1 shrink-0 mt-0.5", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}
+                  >
+                    {done ? <><CheckCircle2 className="h-3 w-3" /> Added</> : <><ListTodo className="h-3 w-3" /> Add to Task</>}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Feature gap section ──────────────────────────────────────────────────────
+
+function FeatureGapSection({ gaps, competitorName, onAddTask, createdTasks }: {
+  gaps: FeatureGap[];
+  competitorName: string;
+  onAddTask: (gap: FeatureGap, key: string) => void;
+  createdTasks: Set<string>;
+}) {
+  if (gaps.length === 0) return null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <Lightbulb className="h-4 w-4 text-blue-500" />
+        <span className="font-semibold text-sm">Feature Gaps — {competitorName} has, you don&apos;t</span>
+        <span className="text-xs text-muted-foreground">({gaps.length})</span>
+      </div>
+      {gaps.map((gap, i) => {
+        const key = `gap-task-${i}`;
+        const done = createdTasks.has(key);
+        return (
+          <Card key={i} className="border-l-2 border-l-blue-400">
             <CardContent className="pt-3 pb-3">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-medium bg-muted px-1.5 py-0.5 rounded text-muted-foreground">{f.category}</span>
-                <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", IMPACT_STYLE[f.impact])}>{f.impact} impact</span>
+              <div className="flex items-start justify-between gap-3 mb-1.5">
+                <span className="font-semibold text-sm">{gap.label}</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", GAP_TYPE_STYLE[gap.type])}>{gap.type}</span>
+                  <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", EFFORT_STYLE[gap.effort])}>{gap.effort}</span>
+                </div>
               </div>
-              <p className="text-sm font-medium mb-1">{f.issue}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">→ {f.recommendation}</p>
+              <div className="flex items-start gap-2">
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">{gap.description}</p>
+                <Button
+                  variant="outline" size="sm"
+                  onClick={() => !done && onAddTask(gap, key)}
+                  disabled={done}
+                  className={cn("h-6 text-[10px] px-2 gap-1 shrink-0 mt-0.5", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}
+                >
+                  {done ? <><CheckCircle2 className="h-3 w-3" /> Added</> : <><ListTodo className="h-3 w-3" /> Add to Task</>}
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
 
 // ─── Compare view ─────────────────────────────────────────────────────────────
 
-function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB }: {
+function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB, onAddTask, createdTasks }: {
   a: Competitor; b: Competitor;
   onRerunA: () => void; onRerunB: () => void;
   loadingA: boolean; loadingB: boolean;
+  onAddTask: (item: { title: string; description: string }, key: string) => void;
+  createdTasks: Set<string>;
 }) {
   const auditA = a.croAudits[a.croAudits.length - 1]; // your site
   const auditB = b.croAudits[b.croAudits.length - 1]; // competitor
 
   const categories = auditA && auditB ? Object.keys({ ...auditA.breakdown, ...auditB.breakdown }) : [];
 
-  // Gaps where competitor beats your site by 10+ points
   const stealOpportunities = auditA && auditB
     ? categories
         .map((key) => ({ key, gap: (auditB.breakdown[key] ?? 0) - (auditA.breakdown[key] ?? 0) }))
         .filter(({ gap }) => gap >= 10)
-        .sort((a, b) => b.gap - a.gap)
+        .sort((x, y) => y.gap - x.gap)
     : [];
 
-  // Areas where you're ahead
   const yourWins = auditA && auditB
     ? categories
         .map((key) => ({ key, gap: (auditA.breakdown[key] ?? 0) - (auditB.breakdown[key] ?? 0) }))
         .filter(({ gap }) => gap >= 10)
-        .sort((a, b) => b.gap - a.gap)
+        .sort((x, y) => y.gap - x.gap)
     : [];
+
+  const yourExtracted = parseExtracted(a.snapshots?.[0]?.extracted);
+  const theirExtracted = parseExtracted(b.snapshots?.[0]?.extracted);
+  const featureGaps: FeatureGap[] = yourExtracted && theirExtracted
+    ? detectFeatureGaps(yourExtracted, theirExtracted)
+    : [];
+
+  const handleGapTask = (gap: FeatureGap, key: string) => {
+    onAddTask({ title: `Add ${gap.label}`, description: gap.description }, key);
+  };
 
   return (
     <div className="space-y-5">
@@ -378,6 +579,16 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB }: {
         </div>
       )}
 
+      {/* Feature gaps */}
+      {featureGaps.length > 0 && (
+        <FeatureGapSection
+          gaps={featureGaps}
+          competitorName={b.name}
+          onAddTask={handleGapTask}
+          createdTasks={createdTasks}
+        />
+      )}
+
       {/* Your wins */}
       {yourWins.length > 0 && (
         <div className="space-y-2">
@@ -397,7 +608,7 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB }: {
       )}
 
       {/* No gaps found */}
-      {auditA && auditB && stealOpportunities.length === 0 && yourWins.length === 0 && (
+      {auditA && auditB && stealOpportunities.length === 0 && yourWins.length === 0 && featureGaps.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-6">Scores are close — no significant gaps detected.</p>
       )}
 
@@ -453,6 +664,8 @@ export default function CompetitorsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [compareId, setCompareId] = useState<string | null>(null);
   const [auditing, setAuditing] = useState<Set<string>>(new Set());
+  const [createdTests, setCreatedTests] = useState<Set<string>>(new Set());
+  const [createdTasks, setCreatedTasks] = useState<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     const res = await fetch("/api/competitors");
@@ -504,6 +717,36 @@ export default function CompetitorsPage() {
     toast.success("CRO audit complete");
   };
 
+  const createAbTest = async (test: CroAudit["abTests"][0], key: string) => {
+    const res = await fetch("/api/ab-tests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: test.title, hypothesis: test.hypothesis }),
+    });
+    const json = await res.json();
+    if (!res.ok) { toast.error(json.error ?? "Failed to create test"); return; }
+    setCreatedTests((prev) => new Set(prev).add(key));
+    toast.success("A/B test created");
+  };
+
+  const addTask = async (item: { title: string; description?: string } | CroAudit["findings"][0], key: string) => {
+    const isTaskItem = (x: typeof item): x is { title: string; description: string } => "title" in x;
+    const isFinding = (x: typeof item): x is CroAudit["findings"][0] => "issue" in x;
+
+    const title = isFinding(item) ? item.issue : isTaskItem(item) ? item.title : "";
+    const description = isFinding(item) ? item.recommendation : isTaskItem(item) ? item.description ?? "" : "";
+
+    const res = await fetch("/api/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ title, description, priority: "medium" }),
+    });
+    const json = await res.json();
+    if (!res.ok) { toast.error(json.error ?? "Failed to add task"); return; }
+    setCreatedTasks((prev) => new Set(prev).add(key));
+    toast.success("Task added");
+  };
+
   const selected = competitors.find((c) => c.id === selectedId) ?? null;
   const compared = competitors.find((c) => c.id === compareId) ?? null;
   const isComparing = !!selected && !!compared;
@@ -546,7 +789,6 @@ export default function CompetitorsPage() {
                 {latestAudit && (
                   <span className={cn("text-xs font-bold tabular-nums shrink-0", scoreColor(latestAudit.score))}>{latestAudit.score}</span>
                 )}
-                {/* Compare toggle */}
                 {selectedId && c.id !== selectedId && (
                   <button
                     onClick={() => setCompareId(isCompare ? null : c.id)}
@@ -588,6 +830,8 @@ export default function CompetitorsPage() {
             a={selected} b={compared!}
             onRerunA={() => runAudit(selected.id)} onRerunB={() => runAudit(compared!.id)}
             loadingA={auditing.has(selected.id)} loadingB={auditing.has(compared!.id)}
+            onAddTask={addTask}
+            createdTasks={createdTasks}
           />
         ) : selected.croAudits.length === 0 ? (
           <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
@@ -614,6 +858,10 @@ export default function CompetitorsPage() {
             allAudits={selected.croAudits}
             onRerun={() => runAudit(selected.id)}
             loading={auditing.has(selected.id)}
+            onCreateAbTest={createAbTest}
+            onAddTask={addTask}
+            createdTests={createdTests}
+            createdTasks={createdTasks}
           />
         )}
       </div>
