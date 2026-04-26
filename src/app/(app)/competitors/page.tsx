@@ -49,6 +49,17 @@ const BREAKDOWN_LABELS: Record<string, string> = {
   social_proof: "Social Proof",
   structure: "Page Structure",
   urgency: "Urgency Signals",
+  mobile: "Mobile Optimisation",
+};
+
+const STEAL_ADVICE: Record<string, string> = {
+  hero:         "Their headline likely communicates a clearer outcome. Test rewriting your H1 to lead with the user's benefit, not your product name.",
+  cta:          "Their CTA copy is probably more specific and action-oriented. A/B test your primary button with benefit-led copy ('Get My Free X' vs what you have).",
+  clarity:      "Their page is more scannable — likely better H2 structure and section flow. Add descriptive subheadings that explain each section's value.",
+  social_proof: "They're showing stronger trust signals — customer counts, star ratings, or testimonials. Add similar signals directly above or below your CTA.",
+  structure:    "Their page hierarchy is cleaner. Review how they order sections and whether they use a logical hero → benefits → proof → CTA flow.",
+  urgency:      "They reduce friction better — likely 'No credit card required', 'Free trial', or 'Cancel anytime' near their CTA. Add similar reassurance copy.",
+  mobile:       "Their mobile experience is more optimised. Check viewport meta, button tap targets, and nav usability on a real mobile device.",
 };
 
 const PRIORITY_STYLE = {
@@ -279,18 +290,38 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB }: {
   onRerunA: () => void; onRerunB: () => void;
   loadingA: boolean; loadingB: boolean;
 }) {
-  const auditA = a.croAudits[a.croAudits.length - 1];
-  const auditB = b.croAudits[b.croAudits.length - 1];
+  const auditA = a.croAudits[a.croAudits.length - 1]; // your site
+  const auditB = b.croAudits[b.croAudits.length - 1]; // competitor
 
-  const categories = auditA ? Object.keys(auditA.breakdown) : [];
+  const categories = auditA && auditB ? Object.keys({ ...auditA.breakdown, ...auditB.breakdown }) : [];
+
+  // Gaps where competitor beats your site by 10+ points
+  const stealOpportunities = auditA && auditB
+    ? categories
+        .map((key) => ({ key, gap: (auditB.breakdown[key] ?? 0) - (auditA.breakdown[key] ?? 0) }))
+        .filter(({ gap }) => gap >= 10)
+        .sort((a, b) => b.gap - a.gap)
+    : [];
+
+  // Areas where you're ahead
+  const yourWins = auditA && auditB
+    ? categories
+        .map((key) => ({ key, gap: (auditA.breakdown[key] ?? 0) - (auditB.breakdown[key] ?? 0) }))
+        .filter(({ gap }) => gap >= 10)
+        .sort((a, b) => b.gap - a.gap)
+    : [];
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Score header */}
       <div className="grid grid-cols-2 gap-4">
-        {[{ c: a, audit: auditA, onRerun: onRerunA, loading: loadingA }, { c: b, audit: auditB, onRerun: onRerunB, loading: loadingB }].map(({ c, audit, onRerun, loading }) => (
-          <Card key={c.id}>
+        {([
+          { c: a, audit: auditA, onRerun: onRerunA, loading: loadingA, label: "Your Site" },
+          { c: b, audit: auditB, onRerun: onRerunB, loading: loadingB, label: "Competitor" },
+        ] as const).map(({ c, audit, onRerun, loading, label }) => (
+          <Card key={c.id} className={label === "Competitor" && auditB && auditA && auditB.score > auditA.score ? "border-amber-300 dark:border-amber-700" : ""}>
             <CardContent className="pt-4 pb-4 flex flex-col items-center gap-2 text-center">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
               {audit ? (
                 <>
                   <ScoreRing score={audit.score} size={80} />
@@ -298,7 +329,7 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB }: {
                     <p className="font-semibold text-sm">{c.name}</p>
                     <a href={c.url} target="_blank" rel="noopener noreferrer"
                       className="text-[10px] text-muted-foreground hover:text-primary flex items-center justify-center gap-0.5">
-                      {c.url.replace(/^https?:\/\//, "").slice(0, 30)} <ExternalLink className="h-2.5 w-2.5" />
+                      {c.url.replace(/^https?:\/\//, "").slice(0, 32)} <ExternalLink className="h-2.5 w-2.5" />
                     </a>
                   </div>
                   <Button variant="outline" size="sm" onClick={onRerun} disabled={loading} className="h-7 text-xs">
@@ -311,7 +342,7 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB }: {
                   <p className="text-xs font-medium">{c.name}</p>
                   <Button size="sm" onClick={onRerun} disabled={loading} className="h-7 text-xs">
                     {loading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Zap className="h-3 w-3 mr-1" />}
-                    Audit
+                    Audit now
                   </Button>
                 </div>
               )}
@@ -320,72 +351,92 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB }: {
         ))}
       </div>
 
-      {/* Breakdown comparison */}
+      {/* What to steal */}
+      {stealOpportunities.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-amber-500" />
+            <span className="font-semibold text-sm">What to steal from {b.name}</span>
+            <span className="text-xs text-muted-foreground">({stealOpportunities.length} gap{stealOpportunities.length !== 1 ? "s" : ""})</span>
+          </div>
+          {stealOpportunities.map(({ key, gap }) => (
+            <Card key={key} className="border-l-2 border-l-amber-400">
+              <CardContent className="pt-3 pb-3">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="font-semibold text-sm">{BREAKDOWN_LABELS[key] ?? key}</span>
+                  <div className="flex items-center gap-2 text-xs shrink-0">
+                    <span className={cn("tabular-nums font-bold", scoreColor(auditA!.breakdown[key] ?? 0))}>{auditA!.breakdown[key] ?? 0}</span>
+                    <span className="text-muted-foreground">vs</span>
+                    <span className={cn("tabular-nums font-bold", scoreColor(auditB!.breakdown[key] ?? 0))}>{auditB!.breakdown[key] ?? 0}</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">+{gap} gap</span>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{STEAL_ADVICE[key] ?? "Review what the competitor does differently in this area."}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Your wins */}
+      {yourWins.length > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="text-emerald-500 text-sm font-bold">✓</span>
+            <span className="font-semibold text-sm">Your advantages over {b.name}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {yourWins.map(({ key, gap }) => (
+              <div key={key} className="flex items-center gap-1.5 text-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 px-2.5 py-1.5 rounded-lg">
+                <span className="font-medium">{BREAKDOWN_LABELS[key] ?? key}</span>
+                <span className="font-bold">+{gap}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No gaps found */}
+      {auditA && auditB && stealOpportunities.length === 0 && yourWins.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-6">Scores are close — no significant gaps detected.</p>
+      )}
+
+      {/* Full breakdown comparison */}
       {auditA && auditB && (
         <Card>
           <CardContent className="pt-4 pb-4 space-y-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Score breakdown</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Full breakdown</p>
             {categories.map((key) => {
               const vA = auditA.breakdown[key] ?? 0;
               const vB = auditB.breakdown[key] ?? 0;
-              const winner = vA > vB ? "a" : vA < vB ? "b" : "tie";
               return (
                 <div key={key} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>{BREAKDOWN_LABELS[key] ?? key}</span>
-                    <span className={cn("text-[10px] font-semibold", winner === "tie" ? "text-muted-foreground" : "text-primary")}>
-                      {winner === "tie" ? "Tied" : `${winner === "a" ? a.name : b.name} wins`}
-                    </span>
+                    {vA !== vB && (
+                      <span className={cn("text-[10px] font-semibold", vA > vB ? "text-emerald-600" : "text-amber-600")}>
+                        {vA > vB ? `You +${vA - vB}` : `They +${vB - vA}`}
+                      </span>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-0.5">
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-muted-foreground truncate">{a.name}</span>
-                        <span className={cn("font-bold", scoreColor(vA))}>{vA}</span>
+                    {[{ name: a.name, val: vA }, { name: b.name, val: vB }].map(({ name, val }) => (
+                      <div key={name} className="space-y-0.5">
+                        <div className="flex justify-between text-[10px]">
+                          <span className="text-muted-foreground truncate">{name}</span>
+                          <span className={cn("font-bold", scoreColor(val))}>{val}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted/40">
+                          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${val}%`, backgroundColor: scoreRingColor(val) }} />
+                        </div>
                       </div>
-                      <div className="h-1.5 rounded-full bg-muted/40">
-                        <div className="h-full rounded-full" style={{ width: `${vA}%`, backgroundColor: scoreRingColor(vA) }} />
-                      </div>
-                    </div>
-                    <div className="space-y-0.5">
-                      <div className="flex justify-between text-[10px]">
-                        <span className="text-muted-foreground truncate">{b.name}</span>
-                        <span className={cn("font-bold", scoreColor(vB))}>{vB}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-muted/40">
-                        <div className="h-full rounded-full" style={{ width: `${vB}%`, backgroundColor: scoreRingColor(vB) }} />
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               );
             })}
           </CardContent>
         </Card>
-      )}
-
-      {/* A/B tests for A only (primary) */}
-      {auditA && auditA.abTests.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-violet-500" />
-            <span className="font-semibold text-sm">A/B Tests for {a.name}</span>
-          </div>
-          {auditA.abTests.slice(0, 4).map((test, i) => (
-            <Card key={i} className="border-l-2 border-l-violet-400">
-              <CardContent className="pt-3 pb-3">
-                <div className="flex items-start justify-between gap-3 mb-1">
-                  <span className="font-semibold text-sm">{test.title}</span>
-                  <div className="flex gap-1.5 shrink-0">
-                    <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", PRIORITY_STYLE[test.priority])}>{test.priority}</span>
-                    <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", EFFORT_STYLE[test.effort])}>{test.effort}</span>
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{test.hypothesis}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
       )}
     </div>
   );

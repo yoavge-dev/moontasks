@@ -7,6 +7,10 @@ export interface ExtractedContent {
   ctas: string[];
   pricing: string[];
   sections: string[];
+  // Mobile signals
+  hasMobileViewport: boolean;
+  hasButtonCtas: boolean;   // <button> elements (better tap targets than <a>)
+  hasAmpOrPwa: boolean;     // AMP or manifest = mobile-first signals
 }
 
 function stripTags(html: string): string {
@@ -54,6 +58,15 @@ export function extractContent(html: string, url: string): ExtractedContent {
   // Key section headings context
   const sections = extractTag(html, "h2").concat(extractTag(html, "h3")).slice(0, 15);
 
+  // Mobile signals
+  const hasMobileViewport = /<meta[^>]+name=["']viewport["'][^>]*content=["'][^"']*width=device-width[^"']*["']/i.test(html)
+    || /<meta[^>]+content=["'][^"']*width=device-width[^"']*["'][^>]*name=["']viewport["']/i.test(html);
+
+  const hasButtonCtas = /<button[^>]*>[\s\S]*?<\/button>/i.test(html);
+
+  const hasAmpOrPwa = /\bamp\b/.test(html.slice(0, 200))
+    || /<link[^>]+rel=["']manifest["']/i.test(html);
+
   return {
     title: extractTag(html, "title")[0] ?? "",
     description: extractMeta(html, "description") || extractMeta(html, "og:description"),
@@ -63,6 +76,9 @@ export function extractContent(html: string, url: string): ExtractedContent {
     ctas: [...new Set(ctas)].slice(0, 10),
     pricing: pricingMatches,
     sections,
+    hasMobileViewport,
+    hasButtonCtas,
+    hasAmpOrPwa,
   };
 }
 

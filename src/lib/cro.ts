@@ -7,6 +7,7 @@ export interface CroBreakdown {
   social_proof: number;
   structure: number;
   urgency: number;
+  mobile: number;
 }
 
 export interface AbTest {
@@ -168,6 +169,28 @@ function scoreUrgency(e: ExtractedContent): number {
   return Math.min(score, 100);
 }
 
+function scoreMobile(e: ExtractedContent): number {
+  let score = 0;
+
+  // Viewport meta is non-negotiable for mobile
+  if (e.hasMobileViewport) score += 45;
+
+  // Button CTAs are easier to tap than bare links
+  if (e.hasButtonCtas) score += 20;
+
+  // AMP / PWA manifest = mobile-first investment
+  if (e.hasAmpOrPwa) score += 15;
+
+  // Short CTA text is more mobile-friendly
+  const shortCtas = e.ctas.filter((c) => c.length <= 25);
+  if (shortCtas.length > 0) score += 10;
+
+  // Nav not overloaded (too many items = hard to use on mobile)
+  if (e.nav.length > 0 && e.nav.length <= 6) score += 10;
+
+  return Math.min(score, 100);
+}
+
 // ─── Findings ──────────────────────────────────────────────────────────────
 
 function generateFindings(e: ExtractedContent, b: CroBreakdown): Finding[] {
@@ -291,6 +314,32 @@ function generateFindings(e: ExtractedContent, b: CroBreakdown): Finding[] {
       category: "Pricing",
       issue: "No pricing signals detected",
       recommendation: "Show pricing or a 'See pricing' link. Hiding price forces users to contact you before they're ready, increasing drop-off.",
+      impact: "medium",
+    });
+  }
+
+  // Mobile
+  if (!e.hasMobileViewport) {
+    findings.push({
+      category: "Mobile",
+      issue: "Missing mobile viewport meta tag",
+      recommendation: 'Add <meta name="viewport" content="width=device-width, initial-scale=1"> to the <head>. Without it, mobile browsers render a desktop-sized page — CTAs become untappable and bounce rate spikes.',
+      impact: "high",
+    });
+  } else if (!e.hasButtonCtas) {
+    findings.push({
+      category: "Mobile",
+      issue: "CTAs may be links instead of buttons",
+      recommendation: "Use <button> elements or large touch-target anchors for CTAs. Minimum 44×44px tap target. Links styled as text are easy to miss and hard to tap on mobile.",
+      impact: "medium",
+    });
+  }
+
+  if (e.nav.length > 8) {
+    findings.push({
+      category: "Mobile",
+      issue: `Navigation has ${e.nav.length} items — likely overflows on mobile`,
+      recommendation: "Collapse nav to a hamburger menu on mobile. Show only the 3–4 most critical links. Overloaded nav is a top source of mobile friction.",
       impact: "medium",
     });
   }
@@ -434,6 +483,7 @@ export function runCroAudit(extracted: ExtractedContent): CroResult {
     social_proof: scoreSocialProof(extracted),
     structure:    scoreStructure(extracted),
     urgency:      scoreUrgency(extracted),
+    mobile:       scoreMobile(extracted),
   };
 
   const score = Math.round(
