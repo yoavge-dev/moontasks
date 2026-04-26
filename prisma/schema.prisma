@@ -36,6 +36,7 @@ model Competitor {
   id        String   @id @default(cuid())
   name      String
   url       String
+  isControl Boolean  @default(false)
   ownerId   String
   createdAt DateTime @default(now())
 

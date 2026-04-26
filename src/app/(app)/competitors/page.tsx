@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, ExternalLink, Loader2, RefreshCw, Zap, AlertTriangle, BarChart2, GitCompare, X, CheckCircle2, ListTodo, FlaskConical, Lightbulb } from "lucide-react";
+import {
+  Plus, Trash2, ExternalLink, Loader2, RefreshCw, Zap, AlertTriangle,
+  BarChart2, X, CheckCircle2, ListTodo, FlaskConical, Lightbulb, Home, Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +41,7 @@ interface Competitor {
   id: string;
   name: string;
   url: string;
+  isControl: boolean;
   croAudits: CroAudit[];
   snapshots?: Array<{ extracted: string }>;
 }
@@ -150,20 +154,12 @@ function ScoreRing({ score, size = 108 }: { score: number; size?: number }) {
 
 // ─── Breakdown bar ────────────────────────────────────────────────────────────
 
-function BreakdownBar({ label, value, compareValue }: { label: string; value: number; compareValue?: number }) {
-  const delta = compareValue !== undefined ? value - compareValue : null;
+function BreakdownBar({ label, value }: { label: string; value: number }) {
   return (
     <div className="space-y-1">
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <div className="flex items-center gap-1.5">
-          {delta !== null && (
-            <span className={cn("text-[10px] font-semibold", delta > 0 ? "text-emerald-600" : delta < 0 ? "text-red-500" : "text-muted-foreground")}>
-              {delta > 0 ? `+${delta}` : delta}
-            </span>
-          )}
-          <span className={cn("font-semibold tabular-nums", scoreColor(value))}>{value}</span>
-        </div>
+        <span className={cn("font-semibold tabular-nums", scoreColor(value))}>{value}</span>
       </div>
       <div className="h-1.5 rounded-full bg-muted/40">
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, backgroundColor: scoreRingColor(value) }} />
@@ -172,15 +168,12 @@ function BreakdownBar({ label, value, compareValue }: { label: string; value: nu
   );
 }
 
-// ─── Score trend chart ────────────────────────────────────────────────────────
+// ─── Score trend ──────────────────────────────────────────────────────────────
 
 function ScoreTrend({ audits }: { audits: CroAudit[] }) {
   if (audits.length < 2) return null;
   const data = audits.map((a) => ({ date: format(new Date(a.createdAt), "MMM d"), score: a.score }));
-  const latest = audits[audits.length - 1].score;
-  const first = audits[0].score;
-  const delta = latest - first;
-
+  const delta = audits[audits.length - 1].score - audits[0].score;
   return (
     <div className="mt-4 pt-4 border-t">
       <div className="flex items-center justify-between mb-2">
@@ -193,10 +186,7 @@ function ScoreTrend({ audits }: { audits: CroAudit[] }) {
         <LineChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
           <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
           <YAxis domain={[0, 100]} hide />
-          <Tooltip
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb", padding: "4px 10px" }}
-            formatter={(v: number) => [`${v}/100`, "Score"]}
-          />
+          <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb", padding: "4px 10px" }} formatter={(v) => [`${v}/100`, "Score"]} />
           <Line type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3, fill: "#8b5cf6" }} activeDot={{ r: 4 }} />
         </LineChart>
       </ResponsiveContainer>
@@ -219,12 +209,8 @@ function SprintPanel({ audit, onCreateAbTest, onAddTask, createdTests, createdTa
     | { kind: "task"; item: CroAudit["findings"][0]; idx: number };
 
   const wins: QuickWin[] = [
-    ...audit.findings
-      .map((f, idx) => ({ kind: "task" as const, item: f, idx }))
-      .filter(({ item }) => item.impact === "high"),
-    ...audit.abTests
-      .map((t, idx) => ({ kind: "test" as const, item: t, idx }))
-      .filter(({ item }) => item.priority === "high" && item.effort === "easy"),
+    ...audit.findings.map((f, idx) => ({ kind: "task" as const, item: f, idx })).filter(({ item }) => item.impact === "high"),
+    ...audit.abTests.map((t, idx) => ({ kind: "test" as const, item: t, idx })).filter(({ item }) => item.priority === "high" && item.effort === "easy"),
   ].slice(0, 5);
 
   if (wins.length === 0) return null;
@@ -243,19 +229,12 @@ function SprintPanel({ audit, onCreateAbTest, onAddTask, createdTests, createdTa
               const key = `${competitorId}-ab-${w.idx}`;
               const done = createdTests.has(key);
               return (
-                <div key={key} className="flex items-start gap-2.5 text-sm">
+                <div key={key} className="flex items-start gap-2.5">
                   <FlaskConical className="h-3.5 w-3.5 text-violet-500 shrink-0 mt-0.5" />
                   <span className="flex-1 text-xs leading-relaxed">{w.item.title}</span>
-                  <button
-                    onClick={() => !done && onCreateAbTest(w.item, key)}
-                    disabled={done}
-                    className={cn(
-                      "text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 transition-all",
-                      done
-                        ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
-                        : "text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/30 bg-violet-50 dark:bg-violet-900/20"
-                    )}
-                  >
+                  <button onClick={() => !done && onCreateAbTest(w.item, key)} disabled={done}
+                    className={cn("text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 transition-all",
+                      done ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" : "text-violet-600 hover:bg-violet-100 bg-violet-50 dark:text-violet-400 dark:bg-violet-900/20 dark:hover:bg-violet-900/40")}>
                     {done ? "✓ Created" : "→ Create test"}
                   </button>
                 </div>
@@ -264,19 +243,12 @@ function SprintPanel({ audit, onCreateAbTest, onAddTask, createdTests, createdTa
               const key = `${competitorId}-task-${w.idx}`;
               const done = createdTasks.has(key);
               return (
-                <div key={key} className="flex items-start gap-2.5 text-sm">
+                <div key={key} className="flex items-start gap-2.5">
                   <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
                   <span className="flex-1 text-xs leading-relaxed">{w.item.issue}</span>
-                  <button
-                    onClick={() => !done && onAddTask(w.item, key)}
-                    disabled={done}
-                    className={cn(
-                      "text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 transition-all",
-                      done
-                        ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20"
-                        : "text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 bg-amber-50 dark:bg-amber-900/20"
-                    )}
-                  >
+                  <button onClick={() => !done && onAddTask(w.item, key)} disabled={done}
+                    className={cn("text-[10px] font-semibold px-2 py-0.5 rounded shrink-0 transition-all",
+                      done ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" : "text-amber-600 hover:bg-amber-100 bg-amber-50 dark:text-amber-400 dark:bg-amber-900/20 dark:hover:bg-amber-900/40")}>
                     {done ? "✓ Added" : "→ Add task"}
                   </button>
                 </div>
@@ -289,9 +261,9 @@ function SprintPanel({ audit, onCreateAbTest, onAddTask, createdTests, createdTa
   );
 }
 
-// ─── Single audit results ─────────────────────────────────────────────────────
+// ─── Your site audit view ─────────────────────────────────────────────────────
 
-function AuditResults({ competitor, audit, allAudits, onRerun, loading, onCreateAbTest, onAddTask, createdTests, createdTasks }: {
+function YourSiteAudit({ competitor, audit, allAudits, onRerun, loading, onCreateAbTest, onAddTask, createdTests, createdTasks }: {
   competitor: Competitor;
   audit: CroAudit;
   allAudits: CroAudit[];
@@ -305,22 +277,19 @@ function AuditResults({ competitor, audit, allAudits, onRerun, loading, onCreate
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-3">
-        <span className="font-bold text-base">{competitor.name}</span>
+        <div className="flex items-center gap-1.5">
+          <Home className="h-4 w-4 text-emerald-600" />
+          <span className="font-bold text-base">{competitor.name}</span>
+        </div>
+        <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full">Your Site</span>
         <a href={competitor.url} target="_blank" rel="noopener noreferrer"
-          className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+          className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 ml-auto">
           {competitor.url.replace(/^https?:\/\//, "")} <ExternalLink className="h-3 w-3" />
         </a>
       </div>
 
-      {/* Sprint quick wins */}
-      <SprintPanel
-        audit={audit}
-        onCreateAbTest={onCreateAbTest}
-        onAddTask={onAddTask}
-        createdTests={createdTests}
-        createdTasks={createdTasks}
-        competitorId={competitor.id}
-      />
+      <SprintPanel audit={audit} onCreateAbTest={onCreateAbTest} onAddTask={onAddTask}
+        createdTests={createdTests} createdTasks={createdTasks} competitorId={competitor.id} />
 
       {/* Score + breakdown */}
       <Card>
@@ -353,7 +322,7 @@ function AuditResults({ competitor, audit, allAudits, onRerun, loading, onCreate
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <FlaskConical className="h-4 w-4 text-violet-500" />
-          <span className="font-semibold text-sm">A/B Test Quick Wins</span>
+          <span className="font-semibold text-sm">A/B Test Ideas</span>
           <span className="text-xs text-muted-foreground">({audit.abTests.length})</span>
         </div>
         {audit.abTests.map((test, i) => {
@@ -373,12 +342,8 @@ function AuditResults({ competitor, audit, allAudits, onRerun, loading, onCreate
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] font-medium text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded">{test.category}</span>
                   <span className="text-[11px] text-muted-foreground flex-1">{test.impact}</span>
-                  <Button
-                    variant="outline" size="sm"
-                    onClick={() => !done && onCreateAbTest(test, key)}
-                    disabled={done}
-                    className={cn("h-6 text-[10px] px-2 gap-1", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => !done && onCreateAbTest(test, key)} disabled={done}
+                    className={cn("h-6 text-[10px] px-2 gap-1", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}>
                     {done ? <><CheckCircle2 className="h-3 w-3" /> Created</> : <><FlaskConical className="h-3 w-3" /> Create A/B Test</>}
                   </Button>
                 </div>
@@ -408,12 +373,8 @@ function AuditResults({ competitor, audit, allAudits, onRerun, loading, onCreate
                 <p className="text-sm font-medium mb-1">{f.issue}</p>
                 <div className="flex items-start gap-2">
                   <p className="text-xs text-muted-foreground leading-relaxed flex-1">→ {f.recommendation}</p>
-                  <Button
-                    variant="outline" size="sm"
-                    onClick={() => !done && onAddTask(f, key)}
-                    disabled={done}
-                    className={cn("h-6 text-[10px] px-2 gap-1 shrink-0 mt-0.5", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}
-                  >
+                  <Button variant="outline" size="sm" onClick={() => !done && onAddTask(f, key)} disabled={done}
+                    className={cn("h-6 text-[10px] px-2 gap-1 shrink-0 mt-0.5", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}>
                     {done ? <><CheckCircle2 className="h-3 w-3" /> Added</> : <><ListTodo className="h-3 w-3" /> Add to Task</>}
                   </Button>
                 </div>
@@ -426,101 +387,64 @@ function AuditResults({ competitor, audit, allAudits, onRerun, loading, onCreate
   );
 }
 
-// ─── Feature gap section ──────────────────────────────────────────────────────
+// ─── Competitor vs your site view ─────────────────────────────────────────────
 
-function FeatureGapSection({ gaps, competitorName, onAddTask, createdTasks }: {
-  gaps: FeatureGap[];
-  competitorName: string;
-  onAddTask: (gap: FeatureGap, key: string) => void;
-  createdTasks: Set<string>;
-}) {
-  if (gaps.length === 0) return null;
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <Lightbulb className="h-4 w-4 text-blue-500" />
-        <span className="font-semibold text-sm">Feature Gaps — {competitorName} has, you don&apos;t</span>
-        <span className="text-xs text-muted-foreground">({gaps.length})</span>
-      </div>
-      {gaps.map((gap, i) => {
-        const key = `gap-task-${i}`;
-        const done = createdTasks.has(key);
-        return (
-          <Card key={i} className="border-l-2 border-l-blue-400">
-            <CardContent className="pt-3 pb-3">
-              <div className="flex items-start justify-between gap-3 mb-1.5">
-                <span className="font-semibold text-sm">{gap.label}</span>
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", GAP_TYPE_STYLE[gap.type])}>{gap.type}</span>
-                  <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", EFFORT_STYLE[gap.effort])}>{gap.effort}</span>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <p className="text-xs text-muted-foreground leading-relaxed flex-1">{gap.description}</p>
-                <Button
-                  variant="outline" size="sm"
-                  onClick={() => !done && onAddTask(gap, key)}
-                  disabled={done}
-                  className={cn("h-6 text-[10px] px-2 gap-1 shrink-0 mt-0.5", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}
-                >
-                  {done ? <><CheckCircle2 className="h-3 w-3" /> Added</> : <><ListTodo className="h-3 w-3" /> Add to Task</>}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Compare view ─────────────────────────────────────────────────────────────
-
-function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB, onAddTask, createdTasks }: {
-  a: Competitor; b: Competitor;
-  onRerunA: () => void; onRerunB: () => void;
-  loadingA: boolean; loadingB: boolean;
+function CompetitorView({ control, competitor, onRerunControl, onRerunCompetitor, loadingControl, loadingCompetitor, onAddTask, createdTasks }: {
+  control: Competitor;
+  competitor: Competitor;
+  onRerunControl: () => void;
+  onRerunCompetitor: () => void;
+  loadingControl: boolean;
+  loadingCompetitor: boolean;
   onAddTask: (item: { title: string; description: string }, key: string) => void;
   createdTasks: Set<string>;
 }) {
-  const auditA = a.croAudits[a.croAudits.length - 1]; // your site
-  const auditB = b.croAudits[b.croAudits.length - 1]; // competitor
+  const auditYours = control.croAudits[control.croAudits.length - 1];
+  const auditTheirs = competitor.croAudits[competitor.croAudits.length - 1];
 
-  const categories = auditA && auditB ? Object.keys({ ...auditA.breakdown, ...auditB.breakdown }) : [];
-
-  const stealOpportunities = auditA && auditB
-    ? categories
-        .map((key) => ({ key, gap: (auditB.breakdown[key] ?? 0) - (auditA.breakdown[key] ?? 0) }))
-        .filter(({ gap }) => gap >= 10)
-        .sort((x, y) => y.gap - x.gap)
+  const categories = auditYours && auditTheirs
+    ? Object.keys({ ...auditYours.breakdown, ...auditTheirs.breakdown })
     : [];
 
-  const yourWins = auditA && auditB
+  const stealOps = auditYours && auditTheirs
     ? categories
-        .map((key) => ({ key, gap: (auditA.breakdown[key] ?? 0) - (auditB.breakdown[key] ?? 0) }))
+        .map((key) => ({ key, gap: (auditTheirs.breakdown[key] ?? 0) - (auditYours.breakdown[key] ?? 0) }))
         .filter(({ gap }) => gap >= 10)
-        .sort((x, y) => y.gap - x.gap)
+        .sort((a, b) => b.gap - a.gap)
     : [];
 
-  const yourExtracted = parseExtracted(a.snapshots?.[0]?.extracted);
-  const theirExtracted = parseExtracted(b.snapshots?.[0]?.extracted);
+  const yourWins = auditYours && auditTheirs
+    ? categories
+        .map((key) => ({ key, gap: (auditYours.breakdown[key] ?? 0) - (auditTheirs.breakdown[key] ?? 0) }))
+        .filter(({ gap }) => gap >= 10)
+        .sort((a, b) => b.gap - a.gap)
+    : [];
+
+  const yourExtracted = parseExtracted(control.snapshots?.[0]?.extracted);
+  const theirExtracted = parseExtracted(competitor.snapshots?.[0]?.extracted);
   const featureGaps: FeatureGap[] = yourExtracted && theirExtracted
     ? detectFeatureGaps(yourExtracted, theirExtracted)
     : [];
 
-  const handleGapTask = (gap: FeatureGap, key: string) => {
-    onAddTask({ title: `Add ${gap.label}`, description: gap.description }, key);
-  };
-
   return (
     <div className="space-y-5">
-      {/* Score header */}
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <Users className="h-4 w-4 text-muted-foreground" />
+        <span className="font-bold text-base">{competitor.name}</span>
+        <a href={competitor.url} target="_blank" rel="noopener noreferrer"
+          className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1 ml-auto">
+          {competitor.url.replace(/^https?:\/\//, "")} <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
+
+      {/* Score comparison */}
       <div className="grid grid-cols-2 gap-4">
         {([
-          { c: a, audit: auditA, onRerun: onRerunA, loading: loadingA, label: "Your Site" },
-          { c: b, audit: auditB, onRerun: onRerunB, loading: loadingB, label: "Competitor" },
-        ] as const).map(({ c, audit, onRerun, loading, label }) => (
-          <Card key={c.id} className={label === "Competitor" && auditB && auditA && auditB.score > auditA.score ? "border-amber-300 dark:border-amber-700" : ""}>
+          { c: control, audit: auditYours, onRerun: onRerunControl, loading: loadingControl, label: "Your Site", isControl: true },
+          { c: competitor, audit: auditTheirs, onRerun: onRerunCompetitor, loading: loadingCompetitor, label: "Competitor", isControl: false },
+        ] as const).map(({ c, audit, onRerun, loading, label, isControl }) => (
+          <Card key={c.id} className={cn(!isControl && auditTheirs && auditYours && auditTheirs.score > auditYours.score && "border-amber-300 dark:border-amber-700")}>
             <CardContent className="pt-4 pb-4 flex flex-col items-center gap-2 text-center">
               <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">{label}</span>
               {audit ? (
@@ -553,23 +477,23 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB, onAddTask, 
       </div>
 
       {/* What to steal */}
-      {stealOpportunities.length > 0 && (
+      {stealOps.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Zap className="h-4 w-4 text-amber-500" />
-            <span className="font-semibold text-sm">What to steal from {b.name}</span>
-            <span className="text-xs text-muted-foreground">({stealOpportunities.length} gap{stealOpportunities.length !== 1 ? "s" : ""})</span>
+            <span className="font-semibold text-sm">What to steal from {competitor.name}</span>
+            <span className="text-xs text-muted-foreground">({stealOps.length} gap{stealOps.length !== 1 ? "s" : ""})</span>
           </div>
-          {stealOpportunities.map(({ key, gap }) => (
+          {stealOps.map(({ key, gap }) => (
             <Card key={key} className="border-l-2 border-l-amber-400">
               <CardContent className="pt-3 pb-3">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="font-semibold text-sm">{BREAKDOWN_LABELS[key] ?? key}</span>
                   <div className="flex items-center gap-2 text-xs shrink-0">
-                    <span className={cn("tabular-nums font-bold", scoreColor(auditA!.breakdown[key] ?? 0))}>{auditA!.breakdown[key] ?? 0}</span>
-                    <span className="text-muted-foreground">vs</span>
-                    <span className={cn("tabular-nums font-bold", scoreColor(auditB!.breakdown[key] ?? 0))}>{auditB!.breakdown[key] ?? 0}</span>
-                    <span className="text-amber-600 dark:text-amber-400 font-semibold">+{gap} gap</span>
+                    <span className={cn("tabular-nums font-bold", scoreColor(auditYours!.breakdown[key] ?? 0))}>{auditYours!.breakdown[key] ?? 0}</span>
+                    <span className="text-muted-foreground">→</span>
+                    <span className={cn("tabular-nums font-bold", scoreColor(auditTheirs!.breakdown[key] ?? 0))}>{auditTheirs!.breakdown[key] ?? 0}</span>
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">+{gap}</span>
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{STEAL_ADVICE[key] ?? "Review what the competitor does differently in this area."}</p>
@@ -581,20 +505,45 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB, onAddTask, 
 
       {/* Feature gaps */}
       {featureGaps.length > 0 && (
-        <FeatureGapSection
-          gaps={featureGaps}
-          competitorName={b.name}
-          onAddTask={handleGapTask}
-          createdTasks={createdTasks}
-        />
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Lightbulb className="h-4 w-4 text-blue-500" />
+            <span className="font-semibold text-sm">Features they have, you don&apos;t</span>
+            <span className="text-xs text-muted-foreground">({featureGaps.length})</span>
+          </div>
+          {featureGaps.map((gap, i) => {
+            const key = `gap-task-${competitor.id}-${i}`;
+            const done = createdTasks.has(key);
+            return (
+              <Card key={i} className="border-l-2 border-l-blue-400">
+                <CardContent className="pt-3 pb-3">
+                  <div className="flex items-start justify-between gap-3 mb-1.5">
+                    <span className="font-semibold text-sm">{gap.label}</span>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", GAP_TYPE_STYLE[gap.type])}>{gap.type}</span>
+                      <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize", EFFORT_STYLE[gap.effort])}>{gap.effort}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <p className="text-xs text-muted-foreground leading-relaxed flex-1">{gap.description}</p>
+                    <Button variant="outline" size="sm" onClick={() => !done && onAddTask({ title: `Add ${gap.label}`, description: gap.description }, key)} disabled={done}
+                      className={cn("h-6 text-[10px] px-2 gap-1 shrink-0 mt-0.5", done && "text-emerald-600 dark:text-emerald-400 border-emerald-300")}>
+                      {done ? <><CheckCircle2 className="h-3 w-3" /> Added</> : <><ListTodo className="h-3 w-3" /> Add to Task</>}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
       )}
 
-      {/* Your wins */}
+      {/* Your advantages */}
       {yourWins.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <span className="text-emerald-500 text-sm font-bold">✓</span>
-            <span className="font-semibold text-sm">Your advantages over {b.name}</span>
+            <span className="font-semibold text-sm">Your advantages</span>
           </div>
           <div className="flex flex-wrap gap-2">
             {yourWins.map(({ key, gap }) => (
@@ -607,19 +556,19 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB, onAddTask, 
         </div>
       )}
 
-      {/* No gaps found */}
-      {auditA && auditB && stealOpportunities.length === 0 && yourWins.length === 0 && featureGaps.length === 0 && (
+      {/* No differences */}
+      {auditYours && auditTheirs && stealOps.length === 0 && yourWins.length === 0 && featureGaps.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-6">Scores are close — no significant gaps detected.</p>
       )}
 
-      {/* Full breakdown comparison */}
-      {auditA && auditB && (
+      {/* Full breakdown */}
+      {auditYours && auditTheirs && (
         <Card>
           <CardContent className="pt-4 pb-4 space-y-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Full breakdown</p>
             {categories.map((key) => {
-              const vA = auditA.breakdown[key] ?? 0;
-              const vB = auditB.breakdown[key] ?? 0;
+              const vA = auditYours.breakdown[key] ?? 0;
+              const vB = auditTheirs.breakdown[key] ?? 0;
               return (
                 <div key={key} className="space-y-1.5">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -631,7 +580,7 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB, onAddTask, 
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    {[{ name: a.name, val: vA }, { name: b.name, val: vB }].map(({ name, val }) => (
+                    {[{ name: control.name, val: vA }, { name: competitor.name, val: vB }].map(({ name, val }) => (
                       <div key={name} className="space-y-0.5">
                         <div className="flex justify-between text-[10px]">
                           <span className="text-muted-foreground truncate">{name}</span>
@@ -653,6 +602,48 @@ function CompareView({ a, b, onRerunA, onRerunB, loadingA, loadingB, onAddTask, 
   );
 }
 
+// ─── Competitor list item ─────────────────────────────────────────────────────
+
+function CompetitorListItem({ c, isSelected, isControl, onSelect, onDelete, onSetControl, auditing, scoreColor: sc }: {
+  c: Competitor;
+  isSelected: boolean;
+  isControl: boolean;
+  onSelect: () => void;
+  onDelete: () => void;
+  onSetControl: () => void;
+  auditing: boolean;
+  scoreColor: (s: number) => string;
+}) {
+  const latestAudit = c.croAudits[c.croAudits.length - 1];
+  return (
+    <div className={cn(
+      "flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all group cursor-pointer",
+      isSelected ? (isControl ? "bg-emerald-50 dark:bg-emerald-900/20" : "bg-primary/10") : "hover:bg-muted"
+    )}>
+      <div className="flex-1 min-w-0" onClick={onSelect}>
+        <p className={cn("text-sm font-medium truncate",
+          isSelected && isControl ? "text-emerald-700 dark:text-emerald-400" :
+          isSelected ? "text-primary" : "")}>{c.name}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{c.url.replace(/^https?:\/\//, "")}</p>
+      </div>
+      {auditing && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground shrink-0" />}
+      {!auditing && latestAudit && (
+        <span className={cn("text-xs font-bold tabular-nums shrink-0", sc(latestAudit.score))}>{latestAudit.score}</span>
+      )}
+      {!isControl && (
+        <button onClick={onSetControl} title="Set as my site"
+          className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-emerald-600 shrink-0">
+          <Home className="h-3 w-3" />
+        </button>
+      )}
+      <button onClick={onDelete}
+        className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0">
+        <Trash2 className="h-3 w-3" />
+      </button>
+    </div>
+  );
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CompetitorsPage() {
@@ -660,9 +651,9 @@ export default function CompetitorsPage() {
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
   const [url, setUrl] = useState("");
+  const [isControlAdd, setIsControlAdd] = useState(false);
   const [adding, setAdding] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [compareId, setCompareId] = useState<string | null>(null);
   const [auditing, setAuditing] = useState<Set<string>>(new Set());
   const [createdTests, setCreatedTests] = useState<Set<string>>(new Set());
   const [createdTasks, setCreatedTasks] = useState<Set<string>>(new Set());
@@ -677,8 +668,12 @@ export default function CompetitorsPage() {
     }));
     setCompetitors(list);
     setLoading(false);
-    if (!selectedId && list.length > 0) setSelectedId(list[0].id);
-  }, [selectedId]);
+    setSelectedId((prev) => {
+      if (prev) return prev;
+      const ctrl = list.find((c) => c.isControl);
+      return ctrl?.id ?? list[0]?.id ?? null;
+    });
+  }, []);
 
   useEffect(() => { load(); }, [load]);
 
@@ -691,9 +686,18 @@ export default function CompetitorsPage() {
       body: JSON.stringify({ name, url }),
     });
     const json = await res.json();
-    setAdding(false);
-    if (!res.ok) { toast.error(json.error ?? "Failed to add"); return; }
-    setName(""); setUrl("");
+    if (!res.ok) { toast.error(json.error ?? "Failed to add"); setAdding(false); return; }
+
+    // If marked as control, set it
+    if (isControlAdd) {
+      await fetch(`/api/competitors/${json.data.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isControl: true }),
+      });
+    }
+
+    setName(""); setUrl(""); setIsControlAdd(false); setAdding(false);
     await load();
     setSelectedId(json.data.id);
     toast.success(`${json.data.name} added`);
@@ -702,9 +706,21 @@ export default function CompetitorsPage() {
   const remove = async (id: string) => {
     await fetch(`/api/competitors/${id}`, { method: "DELETE" });
     setCompetitors((prev) => prev.filter((c) => c.id !== id));
-    if (selectedId === id) setSelectedId(competitors.find((c) => c.id !== id)?.id ?? null);
-    if (compareId === id) setCompareId(null);
+    if (selectedId === id) {
+      const remaining = competitors.filter((c) => c.id !== id);
+      setSelectedId(remaining.find((c) => c.isControl)?.id ?? remaining[0]?.id ?? null);
+    }
     toast.success("Removed");
+  };
+
+  const setControl = async (id: string) => {
+    await fetch(`/api/competitors/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isControl: true }),
+    });
+    await load();
+    toast.success("Set as your site");
   };
 
   const runAudit = async (id: string) => {
@@ -729,13 +745,10 @@ export default function CompetitorsPage() {
     toast.success("A/B test created");
   };
 
-  const addTask = async (item: { title: string; description?: string } | CroAudit["findings"][0], key: string) => {
-    const isTaskItem = (x: typeof item): x is { title: string; description: string } => "title" in x;
+  const addTask = async (item: CroAudit["findings"][0] | { title: string; description: string }, key: string) => {
     const isFinding = (x: typeof item): x is CroAudit["findings"][0] => "issue" in x;
-
-    const title = isFinding(item) ? item.issue : isTaskItem(item) ? item.title : "";
-    const description = isFinding(item) ? item.recommendation : isTaskItem(item) ? item.description ?? "" : "";
-
+    const title = isFinding(item) ? item.issue : item.title;
+    const description = isFinding(item) ? item.recommendation : item.description;
     const res = await fetch("/api/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -747,11 +760,17 @@ export default function CompetitorsPage() {
     toast.success("Task added");
   };
 
+  const control = competitors.find((c) => c.isControl) ?? null;
+  const competitorList = competitors.filter((c) => !c.isControl);
   const selected = competitors.find((c) => c.id === selectedId) ?? null;
-  const compared = competitors.find((c) => c.id === compareId) ?? null;
-  const isComparing = !!selected && !!compared;
 
   if (loading) return null;
+
+  // Determine what to show in the right panel
+  const showYourSite = selected?.isControl && selected.croAudits.length > 0;
+  const showCompare = selected && !selected.isControl && control;
+  const showEmptyAudit = selected && !selected.isControl && !control;
+  const showNoAuditYet = selected?.isControl && selected.croAudits.length === 0;
 
   return (
     <div className="flex gap-5 h-full min-h-0">
@@ -759,64 +778,76 @@ export default function CompetitorsPage() {
       <div className="w-64 shrink-0 flex flex-col gap-4">
         <div>
           <h1 className="text-lg font-bold tracking-tight">CRO Audit</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">Score and A/B test ideas per URL</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Score your site, spy on competitors</p>
         </div>
 
+        {/* Add form */}
         <Card>
           <CardContent className="pt-4 pb-4 space-y-2">
-            <Input placeholder="Name (e.g. Casino UK)" value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-xs" />
+            <Input placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-xs" />
             <Input placeholder="https://example.com" value={url} onChange={(e) => setUrl(e.target.value)} onKeyDown={(e) => e.key === "Enter" && add()} className="h-8 text-xs" />
+            <button
+              type="button"
+              onClick={() => setIsControlAdd((v) => !v)}
+              className={cn(
+                "w-full flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs font-medium border transition-all",
+                isControlAdd
+                  ? "bg-emerald-50 border-emerald-300 text-emerald-700 dark:bg-emerald-900/20 dark:border-emerald-700 dark:text-emerald-400"
+                  : "bg-muted/40 border-transparent text-muted-foreground hover:bg-muted"
+              )}
+            >
+              <Home className={cn("h-3.5 w-3.5", isControlAdd ? "text-emerald-600" : "")} />
+              {isControlAdd ? "This is my site ✓" : "This is my site"}
+            </button>
             <Button onClick={add} disabled={adding || !name.trim() || !url.trim()} size="sm" className="w-full h-8">
               <Plus className="h-3.5 w-3.5 mr-1.5" />Add URL
             </Button>
           </CardContent>
         </Card>
 
-        <div className="space-y-0.5 flex-1 overflow-y-auto">
-          {competitors.map((c) => {
-            const latestAudit = c.croAudits[c.croAudits.length - 1];
-            const isPrimary = c.id === selectedId;
-            const isCompare = c.id === compareId;
-            return (
-              <div key={c.id} className={cn(
-                "flex items-center gap-2 px-3 py-2.5 rounded-lg transition-all group cursor-pointer",
-                isPrimary ? "bg-primary/10" : isCompare ? "bg-violet-50 dark:bg-violet-900/20" : "hover:bg-muted"
-              )}>
-                <div className="flex-1 min-w-0" onClick={() => { setSelectedId(c.id); if (compareId === c.id) setCompareId(null); }}>
-                  <p className={cn("text-sm font-medium truncate", isPrimary ? "text-primary" : isCompare ? "text-violet-600 dark:text-violet-400" : "")}>{c.name}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{c.url.replace(/^https?:\/\//, "")}</p>
-                </div>
-                {latestAudit && (
-                  <span className={cn("text-xs font-bold tabular-nums shrink-0", scoreColor(latestAudit.score))}>{latestAudit.score}</span>
-                )}
-                {selectedId && c.id !== selectedId && (
-                  <button
-                    onClick={() => setCompareId(isCompare ? null : c.id)}
-                    title={isCompare ? "Remove from compare" : "Compare with selected"}
-                    className={cn("shrink-0 transition-all", isCompare ? "opacity-100 text-violet-500" : "opacity-0 group-hover:opacity-60 text-muted-foreground hover:text-violet-500")}
-                  >
-                    {isCompare ? <X className="h-3.5 w-3.5" /> : <GitCompare className="h-3.5 w-3.5" />}
-                  </button>
-                )}
-                <button
-                  onClick={() => remove(c.id)}
-                  className="opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity text-muted-foreground hover:text-destructive shrink-0"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              </div>
-            );
-          })}
-          {competitors.length === 0 && (
-            <p className="text-xs text-muted-foreground text-center pt-4">Add a URL to get started</p>
-          )}
-        </div>
+        {/* Your site */}
+        {(control || competitors.length === 0) && (
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-1 mb-1">Your Site</p>
+            {control ? (
+              <CompetitorListItem
+                c={control} isSelected={selectedId === control.id} isControl
+                onSelect={() => setSelectedId(control.id)}
+                onDelete={() => remove(control.id)}
+                onSetControl={() => {}}
+                auditing={auditing.has(control.id)}
+                scoreColor={scoreColor}
+              />
+            ) : (
+              <p className="text-[10px] text-muted-foreground px-3 py-2">No site set — hover a URL and click <Home className="inline h-2.5 w-2.5" /></p>
+            )}
+          </div>
+        )}
 
-        {compareId && (
-          <div className="text-[10px] text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 rounded-lg px-3 py-2 flex items-center gap-1.5">
-            <GitCompare className="h-3 w-3 shrink-0" />
-            Comparing {selected?.name} vs {compared?.name}
-            <button onClick={() => setCompareId(null)} className="ml-auto hover:text-violet-800"><X className="h-3 w-3" /></button>
+        {/* Competitors */}
+        {competitorList.length > 0 && (
+          <div className="flex-1 min-h-0 flex flex-col">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-1 mb-1">Competitors</p>
+            <div className="space-y-0.5 overflow-y-auto flex-1">
+              {competitorList.map((c) => (
+                <CompetitorListItem key={c.id}
+                  c={c} isSelected={selectedId === c.id} isControl={false}
+                  onSelect={() => setSelectedId(c.id)}
+                  onDelete={() => remove(c.id)}
+                  onSetControl={() => setControl(c.id)}
+                  auditing={auditing.has(c.id)}
+                  scoreColor={scoreColor}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* No control hint */}
+        {!control && competitors.length > 0 && (
+          <div className="text-[10px] text-muted-foreground bg-muted/40 rounded-lg px-3 py-2 flex items-start gap-1.5">
+            <Home className="h-3 w-3 shrink-0 mt-0.5" />
+            Hover a URL and click the house icon to mark it as your site
           </div>
         )}
       </div>
@@ -825,15 +856,41 @@ export default function CompetitorsPage() {
       <div className="flex-1 min-w-0 overflow-y-auto pb-6">
         {!selected ? (
           <div className="flex items-center justify-center h-48 text-sm text-muted-foreground">Select a URL on the left</div>
-        ) : isComparing ? (
-          <CompareView
-            a={selected} b={compared!}
-            onRerunA={() => runAudit(selected.id)} onRerunB={() => runAudit(compared!.id)}
-            loadingA={auditing.has(selected.id)} loadingB={auditing.has(compared!.id)}
-            onAddTask={addTask}
-            createdTasks={createdTasks}
+
+        ) : showYourSite ? (
+          <YourSiteAudit
+            competitor={selected} audit={selected.croAudits[selected.croAudits.length - 1]}
+            allAudits={selected.croAudits}
+            onRerun={() => runAudit(selected.id)} loading={auditing.has(selected.id)}
+            onCreateAbTest={createAbTest} onAddTask={addTask}
+            createdTests={createdTests} createdTasks={createdTasks}
           />
-        ) : selected.croAudits.length === 0 ? (
+
+        ) : showNoAuditYet ? (
+          <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+            <div className="h-14 w-14 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <Home className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div>
+              <p className="font-semibold">{selected.name}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Your site</p>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-xs">Run a CRO audit to get your score, quick wins, and A/B test ideas.</p>
+            <Button onClick={() => runAudit(selected.id)} disabled={auditing.has(selected.id)}>
+              {auditing.has(selected.id) ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
+              {auditing.has(selected.id) ? "Auditing…" : "Run CRO Audit"}
+            </Button>
+          </div>
+
+        ) : showCompare ? (
+          <CompetitorView
+            control={control!} competitor={selected}
+            onRerunControl={() => runAudit(control!.id)} onRerunCompetitor={() => runAudit(selected.id)}
+            loadingControl={auditing.has(control!.id)} loadingCompetitor={auditing.has(selected.id)}
+            onAddTask={addTask} createdTasks={createdTasks}
+          />
+
+        ) : showEmptyAudit ? (
           <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
             <div className="h-14 w-14 rounded-2xl bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
               <BarChart2 className="h-7 w-7 text-violet-600 dark:text-violet-400" />
@@ -845,25 +902,17 @@ export default function CompetitorsPage() {
                 {selected.url} <ExternalLink className="h-3 w-3" />
               </a>
             </div>
-            <p className="text-sm text-muted-foreground max-w-xs">Run a CRO audit to get a score, breakdown, A/B test ideas and actionable findings.</p>
+            <p className="text-sm text-muted-foreground max-w-xs">
+              Audit this competitor to compare against your site.
+              {!control && " Mark your own URL as 'Your Site' first to enable comparison."}
+            </p>
             <Button onClick={() => runAudit(selected.id)} disabled={auditing.has(selected.id)}>
               {auditing.has(selected.id) ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Zap className="h-4 w-4 mr-2" />}
               {auditing.has(selected.id) ? "Auditing…" : "Run CRO Audit"}
             </Button>
           </div>
-        ) : (
-          <AuditResults
-            competitor={selected}
-            audit={selected.croAudits[selected.croAudits.length - 1]}
-            allAudits={selected.croAudits}
-            onRerun={() => runAudit(selected.id)}
-            loading={auditing.has(selected.id)}
-            onCreateAbTest={createAbTest}
-            onAddTask={addTask}
-            createdTests={createdTests}
-            createdTasks={createdTasks}
-          />
-        )}
+
+        ) : null}
       </div>
     </div>
   );
