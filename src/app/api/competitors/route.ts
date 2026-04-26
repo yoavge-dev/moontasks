@@ -19,7 +19,7 @@ export async function GET() {
     where: { ownerId },
     include: {
       snapshots: { orderBy: { createdAt: "desc" }, take: 1 },
-      croAudits: { orderBy: { createdAt: "desc" }, take: 1 },
+      croAudits: { orderBy: { createdAt: "asc" }, take: 20 },
     },
     orderBy: { createdAt: "desc" },
   });
