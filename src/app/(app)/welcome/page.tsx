@@ -56,6 +56,18 @@ export default async function WelcomePage() {
         ))}
       </div>
 
+      {/* Dashboard preview */}
+      <div className="rounded-xl border overflow-hidden shadow-sm">
+        <div className="px-3 py-2 bg-muted/60 border-b text-xs text-muted-foreground font-medium">Dashboard — at a glance</div>
+        <div className="relative w-full overflow-hidden" style={{ height: 120 }}>
+          <img
+            src="/dashboard-preview.png"
+            alt="Dashboard preview"
+            style={{ position: "absolute", top: -48, left: 0, width: "100%", objectFit: "cover", objectPosition: "top" }}
+          />
+        </div>
+      </div>
+
       {/* Legend + CTA */}
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
