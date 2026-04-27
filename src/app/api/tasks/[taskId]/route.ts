@@ -93,16 +93,6 @@ export async function PUT(req: Request, { params }: { params: Promise<{ taskId: 
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ taskId: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const userId = (session.user as { id: string }).id;
-  const { taskId } = await params;
-
-  const task = await prisma.task.findFirst({ where: { id: taskId, ownerId: userId } });
-  if (!task) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-  await prisma.task.delete({ where: { id: taskId } });
+export async function DELETE() {
   return NextResponse.json({ data: null });
 }
