@@ -249,6 +249,9 @@ model ABTest {
   startedAt       DateTime?
   concludedAt     DateTime?
   plannedDays     Int       @default(30)
+  pageUrl         String?
+  kpi             String?
+  targetUplift    String?
   winner          String?
   resultsSummary  String?
   resultsImageUrl String?
@@ -265,11 +268,12 @@ model ABTest {
 }
 
 model ABVariant {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  testId      String
-  createdAt   DateTime @default(now())
+  id            String   @id @default(cuid())
+  name          String
+  description   String?
+  screenshotUrl String?
+  testId        String
+  createdAt     DateTime @default(now())
 
   test    ABTest     @relation(fields: [testId], references: [id], onDelete: Cascade)
   metrics ABMetric[]

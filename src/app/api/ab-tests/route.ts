@@ -39,8 +39,13 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
     }
 
+    const { startedAt, ...rest } = parsed.data;
     const test = await prisma.aBTest.create({
-      data: { ...parsed.data, ownerId: userId },
+      data: {
+        ...rest,
+        ownerId: userId,
+        ...(startedAt ? { startedAt: new Date(startedAt), status: "running" } : {}),
+      },
       include: {
         owner: { select: { id: true, name: true, email: true } },
         _count: { select: { variants: true } },

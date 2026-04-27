@@ -35,7 +35,7 @@ export function ResultsPanel({ testId, variants, winner: initialWinner, resultsS
   const [uploading, setUploading] = useState(false);
   const [dirty, setDirty] = useState(false);
 
-  const editable = isOwner && status !== "draft";
+  const editable = isOwner && (status === "running" || status === "concluded");
 
   const save = async () => {
     setSaving(true);
