@@ -17,6 +17,7 @@ const statusConfig = {
 type Test = {
   id: string; name: string; hypothesis: string; status: string; createdAt: Date;
   startedAt: Date | null; concludedAt: Date | null; result: string | null;
+  owner: { name: string | null; email: string };
   project: { id: string; name: string } | null;
   team: { id: string; name: string } | null;
   _count: { variants: number };
@@ -66,6 +67,7 @@ function TestCard({ test }: { test: Test }) {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-sm text-muted-foreground line-clamp-2">{test.hypothesis}</p>
+          <p className="text-xs text-muted-foreground">By {test.owner.name ?? test.owner.email}</p>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{test._count.variants} variant{test._count.variants !== 1 ? "s" : ""}</span>
             {daysBadge ? (

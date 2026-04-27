@@ -12,6 +12,7 @@ export default async function ABTestsPage() {
     select: {
       id: true, name: true, hypothesis: true, status: true, createdAt: true,
       startedAt: true, concludedAt: true, result: true,
+      owner: { select: { name: true, email: true } },
       team: { select: { id: true, name: true } },
       project: { select: { id: true, name: true } },
       _count: { select: { variants: true } },
