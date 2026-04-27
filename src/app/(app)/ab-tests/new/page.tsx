@@ -239,17 +239,14 @@ export default function NewABTestPage() {
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
             <Label>Project</Label>
-            <Select value={projectId} onValueChange={(v) => setProjectId(v ?? "")}>
-              <SelectTrigger>
-                <span className="flex flex-1 text-left text-sm truncate">
-                  {projectId ? (projects.find((p) => p.id === projectId)?.name ?? "No project") : <span className="text-muted-foreground">No project</span>}
-                </span>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">No project</SelectItem>
-                {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+            >
+              <option value="">No project</option>
+              {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
           </div>
           <div className="space-y-1">
             <Label>Page / URL being tested</Label>
