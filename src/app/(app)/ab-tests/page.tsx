@@ -8,12 +8,7 @@ export default async function ABTestsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
 
-  const userId = (session.user as { id: string }).id;
-  const memberships = await prisma.teamMember.findMany({ where: { userId }, select: { teamId: true } });
-  const teamIds = memberships.map((m) => m.teamId);
-
   const tests = await prisma.aBTest.findMany({
-    where: { OR: [{ ownerId: userId }, { teamId: { in: teamIds } }] },
     select: {
       id: true, name: true, hypothesis: true, status: true, createdAt: true,
       startedAt: true, concludedAt: true, result: true,

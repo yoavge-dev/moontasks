@@ -90,11 +90,8 @@ export default async function ABTestDetailPage({ params }: { params: Promise<{ t
   const userId = (session.user as { id: string }).id;
   const { testId } = await params;
 
-  const memberships = await prisma.teamMember.findMany({ where: { userId }, select: { teamId: true } });
-  const teamIds = memberships.map((m) => m.teamId);
-
   const test = await prisma.aBTest.findFirst({
-    where: { id: testId, OR: [{ ownerId: userId }, { teamId: { in: teamIds } }] },
+    where: { id: testId },
     include: {
       owner: { select: { id: true, name: true, email: true } },
       team: { select: { id: true, name: true } },
