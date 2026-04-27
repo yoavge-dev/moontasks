@@ -173,18 +173,20 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
           ) : null}
         </div>
 
-        {test.status === "concluded" && (
-          <div className="space-y-1">
-            <Label>Result</Label>
-            <select
-              value={result}
-              onChange={(e) => setResult(e.target.value as "won" | "lost" | "")}
-              className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-            >
-              <option value="">No result set</option>
-              <option value="won">Won — hypothesis confirmed</option>
-              <option value="lost">Lost — hypothesis rejected</option>
-            </select>
+        {test.status !== "draft" && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>Result</Label>
+              <select
+                value={result}
+                onChange={(e) => setResult(e.target.value as "won" | "lost" | "")}
+                className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+              >
+                <option value="">No result set</option>
+                <option value="won">Won — hypothesis confirmed</option>
+                <option value="lost">Lost — hypothesis rejected</option>
+              </select>
+            </div>
           </div>
         )}
       </div>
