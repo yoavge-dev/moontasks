@@ -239,17 +239,21 @@ model RoadmapItem {
 }
 
 model ABTest {
-  id          String    @id @default(cuid())
-  name        String
-  hypothesis  String
-  status      String    @default("draft")
-  ownerId     String
-  teamId      String?
-  projectId   String?
-  startedAt   DateTime?
-  concludedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  name            String
+  hypothesis      String
+  status          String    @default("draft")
+  ownerId         String
+  teamId          String?
+  projectId       String?
+  startedAt       DateTime?
+  concludedAt     DateTime?
+  plannedDays     Int       @default(30)
+  winner          String?
+  resultsSummary  String?
+  resultsImageUrl String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   owner    User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   team     Team?       @relation(fields: [teamId], references: [id])

@@ -44,7 +44,29 @@
       "Bash(/Users/yoavgersi/.nvm/versions/node/v24.14.1/bin/npm install:*)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000)",
       "Bash(python3:*)",
-      "Bash(brew install:*)"
+      "Bash(brew install:*)",
+      "Bash(npm info:*)",
+      "Bash(npx --yes npm-show-pkg @nextjs/adapter-vercel)",
+      "Bash(./node_modules/.bin/prisma generate:*)",
+      "Bash(ls /Users/yoavgersi/.nvm/versions/node/*/bin/node)",
+      "Bash(ls /opt/homebrew/opt/node*/bin/node)",
+      "Bash(gh run:*)",
+      "Bash(gh deployment:*)",
+      "Bash(gh api:*)",
+      "Bash(grep -r \"DIRECT_URL\\\\|DATABASE_URL\" .env*)",
+      "Bash(cat prisma/prisma.config.ts)",
+      "Bash(cat prisma.config.ts)",
+      "Bash(ls *.config.ts)",
+      "Bash(node node_modules/next/dist/bin/next build)",
+      "Bash(DATABASE_URL=\"postgresql://placeholder:placeholder@localhost:5432/placeholder\" DIRECT_URL=\"postgresql://placeholder:placeholder@localhost:5432/placeholder\" npx prisma generate)",
+      "Bash(grep -v \"^$\")",
+      "Bash(npx create-next-app@latest \"competitors analysis\" --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\")",
+      "Bash(npx create-next-app@latest competitors-analysis --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\")",
+      "Bash(node:*)",
+      "Bash(npx tsx:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)"
     ]
   }
 }

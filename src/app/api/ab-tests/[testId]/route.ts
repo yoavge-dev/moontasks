@@ -52,9 +52,19 @@ export async function PUT(req: Request, { params }: { params: Promise<{ testId: 
     }
   }
 
-  const data: Record<string, unknown> = { ...parsed.data };
-  if (parsed.data.status === "running" && test.status === "draft") data.startedAt = new Date();
-  if (parsed.data.status === "concluded") data.concludedAt = new Date();
+  const { startedAt, concludedAt, ...rest } = parsed.data;
+  const data: Record<string, unknown> = { ...rest };
+
+  // Auto-set dates on status transitions (unless manually provided)
+  if (parsed.data.status === "running" && test.status === "draft")
+    data.startedAt = startedAt ? new Date(startedAt) : new Date();
+  else if (startedAt !== undefined)
+    data.startedAt = startedAt ? new Date(startedAt) : null;
+
+  if (parsed.data.status === "concluded")
+    data.concludedAt = concludedAt ? new Date(concludedAt) : new Date();
+  else if (concludedAt !== undefined)
+    data.concludedAt = concludedAt ? new Date(concludedAt) : null;
 
   const updated = await prisma.aBTest.update({ where: { id: testId }, data });
   return NextResponse.json({ data: updated });

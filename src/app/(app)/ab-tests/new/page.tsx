@@ -22,6 +22,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 const step1Schema = z.object({
   name: z.string().min(1, "Name is required").max(200),
   hypothesis: z.string().min(1, "Hypothesis is required").max(2000),
+  plannedDays: z.number().int().min(1).max(365),
   projectId: z.string().optional(),
 });
 type Step1Values = z.infer<typeof step1Schema>;
@@ -50,7 +51,7 @@ export default function NewABTestPage() {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
-    defaultValues: { projectId: preselectedProjectId, name: prefilledName, hypothesis: prefilledHypothesis },
+    defaultValues: { projectId: preselectedProjectId, name: prefilledName, hypothesis: prefilledHypothesis, plannedDays: 30 },
   });
 
   const projectId = watch("projectId");
@@ -70,6 +71,7 @@ export default function NewABTestPage() {
       body: JSON.stringify({
         name: testData.name,
         hypothesis: testData.hypothesis,
+        plannedDays: testData.plannedDays,
         projectId: testData.projectId || null,
       }),
     });
@@ -135,6 +137,11 @@ export default function NewABTestPage() {
                 />
                 {errors.hypothesis && <p className="text-xs text-red-500">{errors.hypothesis.message}</p>}
               </div>
+              <div className="space-y-1">
+                <Label htmlFor="plannedDays">Planned duration (days)</Label>
+                <Input id="plannedDays" type="number" min={1} max={365} placeholder="30" {...register("plannedDays", { valueAsNumber: true })} className="w-32" />
+              </div>
+
               {projects.length > 0 && (
                 <div className="space-y-1">
                   <Label>Project (optional)</Label>

@@ -3,6 +3,7 @@ import { z } from "zod";
 export const ABTestSchema = z.object({
   name: z.string().min(1, "Name is required").max(200),
   hypothesis: z.string().min(1, "Hypothesis is required").max(2000),
+  plannedDays: z.number().int().min(1).max(365).default(30),
   teamId: z.string().optional().nullable(),
   projectId: z.string().optional().nullable(),
 });
@@ -11,6 +12,12 @@ export const ABTestUpdateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   hypothesis: z.string().min(1).max(2000).optional(),
   status: z.enum(["draft", "running", "concluded"]).optional(),
+  plannedDays: z.number().int().min(1).max(365).optional(),
+  startedAt: z.string().datetime().nullable().optional(),
+  concludedAt: z.string().datetime().nullable().optional(),
+  winner: z.string().max(200).nullable().optional(),
+  resultsSummary: z.string().max(5000).nullable().optional(),
+  resultsImageUrl: z.string().url().nullable().optional(),
 });
 
 export const ABVariantSchema = z.object({
