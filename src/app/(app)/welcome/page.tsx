@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import {
   LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban,
   Map, BookOpen, Radar, CalendarCheck, ArrowRight, Users2,
@@ -22,6 +23,13 @@ const SECTIONS = [
 export default async function WelcomePage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
+
+  const userId = (session.user as { id: string }).id;
+  await prisma.userSettings.upsert({
+    where: { userId },
+    update: { hasSeenWelcome: true },
+    create: { userId, hasSeenWelcome: true },
+  });
 
   const firstName = session.user.name?.split(" ")[0] ?? "there";
 

@@ -104,6 +104,7 @@ model LibraryWidget {
 model UserSettings {
   id             String  @id @default(cuid())
   userId         String  @unique
+  hasSeenWelcome Boolean @default(false)
   jiraDomain     String?
   jiraEmail      String?
   jiraToken      String?

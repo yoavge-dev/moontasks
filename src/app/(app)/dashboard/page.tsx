@@ -19,6 +19,9 @@ export default async function DashboardPage() {
 
   const userId = (session.user as { id: string }).id;
 
+  const settings = await prisma.userSettings.findUnique({ where: { userId }, select: { hasSeenWelcome: true } });
+  if (!settings?.hasSeenWelcome) redirect("/welcome");
+
   const [openTaskCount, dueTodayTasks, runningABTests, recentTasks, memberships, userSettings] =
     await Promise.all([
       prisma.task.count({ where: { ownerId: userId, status: { not: "done" } } }),
