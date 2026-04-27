@@ -59,13 +59,15 @@ export default async function WelcomePage() {
       {/* Dashboard preview */}
       <div className="rounded-xl border overflow-hidden shadow-sm">
         <div className="px-3 py-2 bg-muted/60 border-b text-xs text-muted-foreground font-medium">Dashboard — at a glance</div>
-        <div className="relative w-full overflow-hidden" style={{ height: 120 }}>
-          <img
-            src="/dashboard-preview.png"
-            alt="Dashboard preview"
-            style={{ position: "absolute", top: -48, left: 0, width: "100%", objectFit: "cover", objectPosition: "top" }}
-          />
-        </div>
+        <div
+          style={{
+            height: 88,
+            backgroundImage: "url('/dashboard-preview.png')",
+            backgroundSize: "100% auto",
+            backgroundPosition: "0px -52px",
+            backgroundRepeat: "no-repeat",
+          }}
+        />
       </div>
 
       {/* Legend + CTA */}

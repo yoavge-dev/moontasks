@@ -94,6 +94,7 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
     if (!res.ok) { toast.error("Failed to save"); return; }
     toast.success("Experiment updated");
     router.push(`/ab-tests/${test.id}`);
+    router.refresh();
   };
 
   const uploadScreenshot = async (variantId: string, file: File) => {

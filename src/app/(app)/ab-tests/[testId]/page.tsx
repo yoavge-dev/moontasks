@@ -6,7 +6,6 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
 import { Separator } from "@/components/ui/separator";
-import { MetricsChart } from "@/components/ab-tests/MetricsChart";
 import { ABStatusControls } from "@/components/ab-tests/ABStatusControls";
 import { ResultsPanel } from "@/components/ab-tests/ResultsPanel";
 import { ArrowLeft, FlaskConical, Calendar, Clock, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react";
@@ -169,14 +168,6 @@ export default async function ABTestDetailPage({ params }: { params: Promise<{ t
           <p className="text-sm leading-relaxed">{test.hypothesis}</p>
         </CardContent>
       </Card>
-
-      <Separator />
-
-      {/* Metrics */}
-      <div>
-        <h2 className="font-semibold mb-4">Metrics Overview</h2>
-        <MetricsChart variants={test.variants} />
-      </div>
 
       <Separator />
 
