@@ -158,11 +158,27 @@ export default async function ABTestDetailPage({ params }: { params: Promise<{ t
 
       {/* Hypothesis */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Hypothesis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm leading-relaxed">{test.hypothesis}</p>
+        <CardContent className="pt-5 space-y-4">
+          {(test.kpi || test.targetUplift) && (
+            <div className="flex items-center gap-6 pb-4 border-b">
+              {test.kpi && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">KPI</p>
+                  <p className="text-sm font-medium">{test.kpi}</p>
+                </div>
+              )}
+              {test.targetUplift && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">Target uplift</p>
+                  <p className="text-sm font-medium">{test.targetUplift}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">Hypothesis</p>
+            <p className="text-sm leading-relaxed">{test.hypothesis}</p>
+          </div>
         </CardContent>
       </Card>
 
