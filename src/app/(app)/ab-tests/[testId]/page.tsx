@@ -194,7 +194,14 @@ export default async function ABTestDetailPage({ params }: { params: Promise<{ t
                   </CardTitle>
                   {variant.description && <p className="text-xs text-muted-foreground">{variant.description}</p>}
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-3">
+                  {variant.screenshotUrl && (
+                    <img
+                      src={variant.screenshotUrl}
+                      alt={`${variant.name} screenshot`}
+                      className="w-full rounded-md object-cover border"
+                    />
+                  )}
                   {Object.keys(metricsByName).length === 0 ? (
                     <p className="text-xs text-muted-foreground">No metrics logged yet.</p>
                   ) : (

@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { Loader2, ArrowLeft, Save } from "lucide-react";
+import { Loader2, ArrowLeft, Save, Upload, ImageIcon } from "lucide-react";
 import Link from "next/link";
 
 const KPI_OPTIONS = [
@@ -56,6 +56,10 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
     test.startedAt ? new Date(test.startedAt).toISOString().split("T")[0] : ""
   );
   const [saving, setSaving] = useState(false);
+  const [uploadingVariant, setUploadingVariant] = useState<string | null>(null);
+  const [variantScreenshots, setVariantScreenshots] = useState<Record<string, string>>(
+    Object.fromEntries(test.variants.map((v) => [v.id, v.screenshotUrl]))
+  );
 
   const save = async () => {
     if (!name.trim()) { toast.error("Name is required"); return; }
@@ -82,6 +86,21 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
     if (!res.ok) { toast.error("Failed to save"); return; }
     toast.success("Experiment updated");
     router.push(`/ab-tests/${test.id}`);
+  };
+
+  const uploadScreenshot = async (variantId: string, file: File) => {
+    setUploadingVariant(variantId);
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(`/api/ab-tests/${test.id}/variants/${variantId}/screenshot`, {
+      method: "POST",
+      body: fd,
+    });
+    setUploadingVariant(null);
+    if (!res.ok) { toast.error("Failed to upload screenshot"); return; }
+    const { data } = await res.json();
+    setVariantScreenshots((prev) => ({ ...prev, [variantId]: data.url }));
+    toast.success("Screenshot uploaded");
   };
 
   const endDate = startDate && plannedDays
@@ -179,10 +198,53 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
         </div>
       </div>
 
-      {/* Variants note */}
-      <div className="rounded-lg bg-muted/40 border px-4 py-3 text-sm text-muted-foreground">
-        To add, rename, or remove variants, go back to the experiment page and use the variant controls there.
-      </div>
+      {/* Variant screenshots */}
+      {test.variants.length > 0 && (
+        <div className="space-y-4">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Variant Screenshots</h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {test.variants.map((variant) => {
+              const screenshotUrl = variantScreenshots[variant.id];
+              const isUploading = uploadingVariant === variant.id;
+              return (
+                <div key={variant.id} className="space-y-2">
+                  <Label>{variant.name}</Label>
+                  <div className="rounded-lg border overflow-hidden bg-muted/30">
+                    {screenshotUrl ? (
+                      <img src={screenshotUrl} alt={variant.name} className="w-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-32 text-muted-foreground gap-2">
+                        <ImageIcon className="h-6 w-6" />
+                        <span className="text-xs">No screenshot</span>
+                      </div>
+                    )}
+                  </div>
+                  <label className="cursor-pointer">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
+                      {isUploading
+                        ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…</>
+                        : <><Upload className="h-3.5 w-3.5" /> {screenshotUrl ? "Replace screenshot" : "Upload screenshot"}</>
+                      }
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      disabled={isUploading}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadScreenshot(variant.id, file);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-xs text-muted-foreground">To add, rename, or remove variants, go back to the experiment page.</p>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="flex items-center justify-between pt-2 border-t">
