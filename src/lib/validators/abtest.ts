@@ -20,6 +20,7 @@ export const ABTestUpdateSchema = z.object({
   pageUrl: z.string().nullable().optional(),
   kpi: z.string().max(100).nullable().optional(),
   targetUplift: z.string().max(50).nullable().optional(),
+  projectId: z.string().nullable().optional(),
   startedAt: z.string().datetime().nullable().optional(),
   concludedAt: z.string().datetime().nullable().optional(),
   winner: z.string().max(200).nullable().optional(),
