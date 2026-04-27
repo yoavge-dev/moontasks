@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
 import { Separator } from "@/components/ui/separator";
 import { MetricsChart } from "@/components/ab-tests/MetricsChart";
-import { MetricLogger } from "@/components/ab-tests/MetricLogger";
 import { ABStatusControls } from "@/components/ab-tests/ABStatusControls";
 import { ResultsPanel } from "@/components/ab-tests/ResultsPanel";
 import { ArrowLeft, FlaskConical, Calendar, Clock, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react";
@@ -145,7 +144,6 @@ export default async function ABTestDetailPage({ params }: { params: Promise<{ t
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
-          <MetricLogger testId={test.id} variants={test.variants} />
           <ABStatusControls testId={test.id} status={test.status} isOwner={isOwner} />
         </div>
       </div>
