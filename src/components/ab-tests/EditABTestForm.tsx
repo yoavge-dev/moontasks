@@ -112,7 +112,11 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
           <div className="space-y-1">
             <Label>Project</Label>
             <Select value={projectId} onValueChange={(v) => setProjectId(v ?? "")}>
-              <SelectTrigger><SelectValue placeholder="No project" /></SelectTrigger>
+              <SelectTrigger>
+                <span className="flex flex-1 text-left text-sm truncate">
+                  {projectId ? (projects.find((p) => p.id === projectId)?.name ?? "No project") : <span className="text-muted-foreground">No project</span>}
+                </span>
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">No project</SelectItem>
                 {projects.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
