@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Plus, Trash2, ExternalLink, Loader2, RefreshCw, Zap, AlertTriangle,
@@ -711,6 +712,7 @@ function CompetitorListItem({ c, isSelected, isControl, onSelect, onDelete, onSe
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function CompetitorsPage() {
+  const router = useRouter();
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState("");
@@ -788,15 +790,10 @@ export default function CompetitorsPage() {
     toast.success("CRO audit complete");
   };
 
-  const createAbTest = async (test: CroAudit["abTests"][0], key: string) => {
-    const res = await fetch("/api/ab-tests", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: test.title, hypothesis: test.hypothesis }),
-    });
-    const json = await res.json();
-    if (!res.ok) { toast.error(json.error ?? "Failed"); return; }
+  const createAbTest = (test: CroAudit["abTests"][0], key: string) => {
     setCreatedTests((prev) => new Set(prev).add(key));
-    toast.success("A/B test created");
+    const params = new URLSearchParams({ name: test.title, hypothesis: test.hypothesis });
+    router.push(`/ab-tests/new?${params.toString()}`);
   };
 
   const addTask = async (item: CroAudit["findings"][0] | { title: string; description: string }, key: string) => {

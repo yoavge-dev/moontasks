@@ -35,6 +35,8 @@ export default function NewABTestPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedProjectId = searchParams.get("projectId") ?? "";
+  const prefilledName = searchParams.get("name") ?? "";
+  const prefilledHypothesis = searchParams.get("hypothesis") ?? "";
 
   const [step, setStep] = useState(1);
   const [testData, setTestData] = useState<Step1Values | null>(null);
@@ -48,7 +50,7 @@ export default function NewABTestPage() {
 
   const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<Step1Values>({
     resolver: zodResolver(step1Schema),
-    defaultValues: { projectId: preselectedProjectId },
+    defaultValues: { projectId: preselectedProjectId, name: prefilledName, hypothesis: prefilledHypothesis },
   });
 
   const projectId = watch("projectId");
