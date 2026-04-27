@@ -52,6 +52,25 @@ export async function POST(req: Request, { params }: { params: Promise<{ teamId:
   return NextResponse.json({ data: member }, { status: 201 });
 }
 
-export async function DELETE() {
+export async function DELETE(req: Request, { params }: { params: Promise<{ teamId: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  const { teamId } = await params;
+
+  const { searchParams } = new URL(req.url);
+  const removeUserId = searchParams.get("userId");
+  if (!removeUserId) return NextResponse.json({ error: "userId required" }, { status: 400 });
+
+  const isOwner = await prisma.teamMember.findFirst({ where: { teamId, userId, role: "owner" } });
+  const isSelf = removeUserId === userId;
+
+  if (!isOwner && !isSelf) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  // Owners cannot leave their own team — transfer ownership first
+  if (isSelf && isOwner) return NextResponse.json({ error: "You are the team owner and cannot remove yourself. Transfer ownership first." }, { status: 400 });
+
+  await prisma.teamMember.deleteMany({ where: { teamId, userId: removeUserId } });
   return NextResponse.json({ data: null });
 }

@@ -49,6 +49,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ teamId: 
   return NextResponse.json({ data: team });
 }
 
-export async function DELETE() {
+export async function DELETE(req: Request, { params }: { params: Promise<{ teamId: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  const { teamId } = await params;
+
+  const member = await prisma.teamMember.findFirst({ where: { teamId, userId, role: "owner" } });
+  if (!member) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  await prisma.team.delete({ where: { id: teamId } });
   return NextResponse.json({ data: null });
 }

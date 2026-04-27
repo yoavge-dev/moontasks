@@ -40,6 +40,23 @@ export async function PUT(
   return NextResponse.json({ data: item });
 }
 
-export async function DELETE() {
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ projectId: string; itemId: string }> }
+) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  const { projectId, itemId } = await params;
+
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (project.ownerId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  const item = await prisma.roadmapItem.findFirst({ where: { id: itemId, projectId } });
+  if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
+
+  await prisma.roadmapItem.delete({ where: { id: itemId } });
   return NextResponse.json({ success: true });
 }

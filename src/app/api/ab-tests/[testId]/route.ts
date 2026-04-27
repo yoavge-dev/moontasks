@@ -70,6 +70,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ testId: 
   return NextResponse.json({ data: updated });
 }
 
-export async function DELETE() {
+export async function DELETE(req: Request, { params }: { params: Promise<{ testId: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  const { testId } = await params;
+
+  const test = await prisma.aBTest.findFirst({ where: { id: testId, ownerId: userId } });
+  if (!test) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await prisma.aBTest.delete({ where: { id: testId } });
   return NextResponse.json({ data: null });
 }

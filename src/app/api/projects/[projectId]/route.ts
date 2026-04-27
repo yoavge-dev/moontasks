@@ -61,6 +61,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ proj
   return NextResponse.json({ data: updated });
 }
 
-export async function DELETE() {
+export async function DELETE(_req: Request, { params }: { params: Promise<{ projectId: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const userId = (session.user as { id: string }).id;
+  const { projectId } = await params;
+
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (project.ownerId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+  await prisma.project.delete({ where: { id: projectId } });
   return NextResponse.json({ success: true });
 }
