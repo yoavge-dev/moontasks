@@ -84,9 +84,7 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
         targetUplift: targetUplift.trim() || null,
         plannedDays: parseInt(plannedDays) || 30,
         result: result || null,
-        ...(test.status === "draft" && startDate
-          ? { startedAt: new Date(startDate).toISOString() }
-          : {}),
+        startedAt: startDate ? new Date(startDate).toISOString() : null,
         ...(test.status === "concluded" && endDate
           ? { concludedAt: new Date(endDate).toISOString() }
           : {}),
@@ -112,11 +110,6 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
     setVariantScreenshots((prev) => ({ ...prev, [variantId]: data.url }));
     toast.success("Screenshot uploaded");
   };
-
-  const endDate = startDate && plannedDays
-    ? new Date(new Date(startDate).getTime() + parseInt(plannedDays) * 86400000)
-        .toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-    : null;
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12">
@@ -156,44 +149,42 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          {test.status === "draft" && (
-            <div className="space-y-1">
-              <Label>Start date</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-            </div>
-          )}
+          <div className="space-y-1">
+            <Label>Start date</Label>
+            <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          </div>
           <div className="space-y-1">
             <Label>Duration (days)</Label>
             <Input type="number" min={1} max={365} value={plannedDays} onChange={(e) => setPlannedDays(e.target.value)} />
           </div>
-          {test.status !== "concluded" && startDate && (
-            <div className="space-y-1">
-              <Label>Expected end</Label>
-              <div className="h-9 flex items-center px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground">
-                {endDate ?? "—"}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {test.status === "concluded" && (
-          <div className="grid grid-cols-2 gap-4">
+          {test.status === "concluded" ? (
             <div className="space-y-1">
               <Label>End date</Label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
+          ) : startDate ? (
             <div className="space-y-1">
-              <Label>Result</Label>
-              <select
-                value={result}
-                onChange={(e) => setResult(e.target.value as "won" | "lost" | "")}
-                className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              >
-                <option value="">No result set</option>
-                <option value="won">Won — hypothesis confirmed</option>
-                <option value="lost">Lost — hypothesis rejected</option>
-              </select>
+              <Label>Expected end</Label>
+              <div className="h-9 flex items-center px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground">
+                {new Date(new Date(startDate).getTime() + parseInt(plannedDays) * 86400000)
+                  .toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+              </div>
             </div>
+          ) : null}
+        </div>
+
+        {test.status === "concluded" && (
+          <div className="space-y-1">
+            <Label>Result</Label>
+            <select
+              value={result}
+              onChange={(e) => setResult(e.target.value as "won" | "lost" | "")}
+              className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+            >
+              <option value="">No result set</option>
+              <option value="won">Won — hypothesis confirmed</option>
+              <option value="lost">Lost — hypothesis rejected</option>
+            </select>
           </div>
         )}
       </div>
