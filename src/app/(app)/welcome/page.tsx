@@ -8,60 +8,15 @@ import {
 import { LinkButton } from "@/components/ui/link-button";
 
 const SECTIONS = [
-  {
-    icon: LayoutDashboard,
-    label: "Dashboard",
-    description: "Your team's live overview — pending tasks, Jira activity, calendar events, and Slack digest in one place.",
-    shared: true,
-  },
-  {
-    icon: CheckSquare,
-    label: "My Tasks",
-    description: "Create, assign, and track tasks across your team. Filter by status, priority, and assignee.",
-    shared: true,
-  },
-  {
-    icon: Users,
-    label: "Team",
-    description: "Manage your team members, invite collaborators, and view the team Kanban board.",
-    shared: false,
-  },
-  {
-    icon: FolderKanban,
-    label: "Projects",
-    description: "Organise work into projects. Each project gets its own roadmap and can be linked to experiments.",
-    shared: false,
-  },
-  {
-    icon: FlaskConical,
-    label: "Experiments (A/B Tests)",
-    description: "Plan, run, and analyse A/B tests. Log variant metrics, track running days, and record winners.",
-    shared: true,
-  },
-  {
-    icon: Map,
-    label: "Roadmaps",
-    description: "Visual roadmap boards grouped by project — drag items across columns to update their status.",
-    shared: true,
-  },
-  {
-    icon: BookOpen,
-    label: "Widget Library",
-    description: "A shared library of UI components and design patterns your team can reference and reuse.",
-    shared: true,
-  },
-  {
-    icon: Radar,
-    label: "CRO Audit",
-    description: "Monitor competitor sites for changes and run AI-powered conversion rate audits.",
-    shared: false,
-  },
-  {
-    icon: CalendarCheck,
-    label: "Daily Update",
-    description: "A quick daily standup view — see what's happening today across tasks and calendar.",
-    shared: false,
-  },
+  { icon: LayoutDashboard, label: "Dashboard",       hint: "Team overview",        shared: true  },
+  { icon: CheckSquare,     label: "Tasks",            hint: "Track & assign work",  shared: true  },
+  { icon: FlaskConical,    label: "Experiments",      hint: "Run A/B tests",        shared: true  },
+  { icon: Map,             label: "Roadmaps",         hint: "Plan what's next",     shared: true  },
+  { icon: BookOpen,        label: "Widget Library",   hint: "Shared UI patterns",   shared: true  },
+  { icon: FolderKanban,    label: "Projects",         hint: "Group your work",      shared: false },
+  { icon: Users,           label: "Team",             hint: "Members & Kanban",     shared: false },
+  { icon: Radar,           label: "CRO Audit",        hint: "Monitor competitors",  shared: false },
+  { icon: CalendarCheck,   label: "Daily Update",     hint: "Today's standup",      shared: false },
 ];
 
 export default async function WelcomePage() {
@@ -71,49 +26,44 @@ export default async function WelcomePage() {
   const firstName = session.user.name?.split(" ")[0] ?? "there";
 
   return (
-    <div className="max-w-3xl mx-auto py-8 space-y-10">
+    <div className="max-w-2xl mx-auto py-12 space-y-10">
       {/* Header */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Welcome, {firstName}</h1>
-        <p className="text-muted-foreground text-base leading-relaxed">
-          MoonTasks is your team's all-in-one workspace for tasks, experiments, roadmaps, and insights.
-          Here's everything you can do.
-        </p>
+      <div className="text-center space-y-2">
+        <div className="h-14 w-14 rounded-2xl bg-primary flex items-center justify-center mx-auto shadow-lg shadow-primary/30 mb-4">
+          <span className="text-white font-black text-xl">M</span>
+        </div>
+        <h1 className="text-3xl font-bold tracking-tight">Hey {firstName}, welcome to MoonTasks</h1>
+        <p className="text-muted-foreground">Your team's workspace for tasks, experiments, and roadmaps.</p>
       </div>
 
-      {/* Shared note */}
-      <div className="flex items-center gap-2.5 rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-        <Users2 className="h-4 w-4 shrink-0 text-primary" />
-        Pages marked <span className="font-semibold text-foreground mx-1">Team</span> are shared with everyone on your workspace — changes are visible to all members.
-      </div>
-
-      {/* Sections grid */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        {SECTIONS.map(({ icon: Icon, label, description, shared }) => (
-          <div key={label} className="rounded-xl border bg-card px-4 py-4 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Icon className="h-4 w-4 text-primary" />
-                </div>
-                <span className="font-semibold text-sm">{label}</span>
-              </div>
-              {shared && (
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
-                  Team
-                </span>
-              )}
+      {/* Grid */}
+      <div className="grid grid-cols-3 gap-3">
+        {SECTIONS.map(({ icon: Icon, label, hint, shared }) => (
+          <div key={label} className="relative rounded-xl border bg-card px-4 py-4 flex flex-col items-center text-center gap-2 hover:border-primary/40 transition-colors">
+            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Icon className="h-5 w-5 text-primary" />
             </div>
-            <p className="text-xs text-muted-foreground leading-relaxed pl-[42px]">{description}</p>
+            <div>
+              <p className="text-sm font-semibold">{label}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>
+            </div>
+            {shared && (
+              <div className="absolute top-2.5 right-2.5">
+                <Users2 className="h-3 w-3 text-primary/50" />
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      {/* CTA */}
-      <div className="flex justify-end pt-2">
-        <LinkButton href="/dashboard" size="lg">
+      {/* Legend + CTA */}
+      <div className="flex items-center justify-between">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Users2 className="h-3.5 w-3.5" /> Shared with your whole team
+        </span>
+        <LinkButton href="/dashboard">
           Go to Dashboard
-          <ArrowRight className="h-4 w-4 ml-2" />
+          <ArrowRight className="h-4 w-4 ml-1.5" />
         </LinkButton>
       </div>
     </div>
