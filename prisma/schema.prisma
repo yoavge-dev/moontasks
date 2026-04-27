@@ -257,6 +257,7 @@ model ABTest {
   result          String?   // "won" | "lost"
   resultsSummary  String?
   resultsImageUrl String?
+  resultsImages   String    @default("[]") // JSON array of URLs
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 

@@ -228,7 +228,9 @@ export default async function ABTestDetailPage({ params }: { params: Promise<{ t
         variants={test.variants}
         winner={test.winner}
         resultsSummary={test.resultsSummary}
-        resultsImageUrl={test.resultsImageUrl}
+        resultsImages={(() => {
+          try { return JSON.parse(test.resultsImages ?? "[]"); } catch { return []; }
+        })()}
         isOwner={isOwner}
         status={test.status}
       />

@@ -27,6 +27,7 @@ export const ABTestUpdateSchema = z.object({
   winner: z.string().max(200).nullable().optional(),
   resultsSummary: z.string().max(5000).nullable().optional(),
   resultsImageUrl: z.string().url().nullable().optional(),
+  resultsImages: z.string().optional(),
 });
 
 export const ABVariantSchema = z.object({

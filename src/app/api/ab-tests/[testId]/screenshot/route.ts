@@ -22,7 +22,5 @@ export async function POST(req: Request, { params }: { params: Promise<{ testId:
     contentType: file.type,
   });
 
-  await prisma.aBTest.update({ where: { id: testId }, data: { resultsImageUrl: blob.url } });
-
   return NextResponse.json({ data: { url: blob.url } });
 }
