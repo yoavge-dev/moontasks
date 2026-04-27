@@ -110,7 +110,7 @@ function scoreRingColor(score: number) {
 }
 
 function screenshotUrl(url: string) {
-  return `https://image.thum.io/get/width/1200/crop/700/noanimate/${url}`;
+  return `/api/screenshot?url=${encodeURIComponent(url)}`;
 }
 
 function faviconUrl(url: string) {
