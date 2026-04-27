@@ -16,7 +16,7 @@ export default async function ABTestsPage() {
     where: { OR: [{ ownerId: userId }, { teamId: { in: teamIds } }] },
     select: {
       id: true, name: true, hypothesis: true, status: true, createdAt: true,
-      startedAt: true, concludedAt: true,
+      startedAt: true, concludedAt: true, result: true,
       team: { select: { id: true, name: true } },
       project: { select: { id: true, name: true } },
       _count: { select: { variants: true } },

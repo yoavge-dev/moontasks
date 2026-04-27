@@ -36,6 +36,8 @@ interface TestData {
   targetUplift: string | null;
   plannedDays: number;
   startedAt: string | null;
+  concludedAt: string | null;
+  result: "won" | "lost" | null;
   status: string;
   variants: { id: string; name: string; description: string; screenshotUrl: string }[];
 }
@@ -55,6 +57,10 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
   const [startDate, setStartDate] = useState(
     test.startedAt ? new Date(test.startedAt).toISOString().split("T")[0] : ""
   );
+  const [endDate, setEndDate] = useState(
+    test.concludedAt ? new Date(test.concludedAt).toISOString().split("T")[0] : ""
+  );
+  const [result, setResult] = useState<"won" | "lost" | "">(test.result ?? "");
   const [saving, setSaving] = useState(false);
   const [uploadingVariant, setUploadingVariant] = useState<string | null>(null);
   const [variantScreenshots, setVariantScreenshots] = useState<Record<string, string>>(
@@ -77,8 +83,12 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
         kpi: kpi || null,
         targetUplift: targetUplift.trim() || null,
         plannedDays: parseInt(plannedDays) || 30,
+        result: result || null,
         ...(test.status === "draft" && startDate
           ? { startedAt: new Date(startDate).toISOString() }
+          : {}),
+        ...(test.status === "concluded" && endDate
+          ? { concludedAt: new Date(endDate).toISOString() }
           : {}),
       }),
     });
@@ -156,7 +166,7 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
             <Label>Duration (days)</Label>
             <Input type="number" min={1} max={365} value={plannedDays} onChange={(e) => setPlannedDays(e.target.value)} />
           </div>
-          {startDate && (
+          {test.status !== "concluded" && startDate && (
             <div className="space-y-1">
               <Label>Expected end</Label>
               <div className="h-9 flex items-center px-3 rounded-md border bg-muted/40 text-sm text-muted-foreground">
@@ -165,6 +175,27 @@ export function EditABTestForm({ test, projects }: { test: TestData; projects: P
             </div>
           )}
         </div>
+
+        {test.status === "concluded" && (
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>End date</Label>
+              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            </div>
+            <div className="space-y-1">
+              <Label>Result</Label>
+              <select
+                value={result}
+                onChange={(e) => setResult(e.target.value as "won" | "lost" | "")}
+                className="h-9 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
+              >
+                <option value="">No result set</option>
+                <option value="won">Won — hypothesis confirmed</option>
+                <option value="lost">Lost — hypothesis rejected</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* KPI & Hypothesis */}

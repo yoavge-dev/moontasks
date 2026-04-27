@@ -253,6 +253,7 @@ model ABTest {
   kpi             String?
   targetUplift    String?
   winner          String?
+  result          String?   // "won" | "lost"
   resultsSummary  String?
   resultsImageUrl String?
   createdAt       DateTime  @default(now())

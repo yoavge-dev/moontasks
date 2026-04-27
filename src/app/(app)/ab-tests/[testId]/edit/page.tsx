@@ -13,7 +13,7 @@ export default async function EditABTestPage({ params }: { params: Promise<{ tes
 
   const test = await prisma.aBTest.findFirst({
     where: { id: testId, ownerId: userId },
-    include: { variants: { orderBy: { createdAt: "asc" } } },
+    include: { variants: { orderBy: { createdAt: "asc" }, select: { id: true, name: true, description: true, screenshotUrl: true } } },
   });
   if (!test) notFound();
 
@@ -35,6 +35,8 @@ export default async function EditABTestPage({ params }: { params: Promise<{ tes
         targetUplift: test.targetUplift,
         plannedDays: test.plannedDays,
         startedAt: test.startedAt?.toISOString() ?? null,
+        concludedAt: test.concludedAt?.toISOString() ?? null,
+        result: (test.result as "won" | "lost" | null) ?? null,
         status: test.status,
         variants: test.variants.map((v) => ({
           id: v.id,

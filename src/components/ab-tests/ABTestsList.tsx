@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LinkButton } from "@/components/ui/link-button";
-import { Plus, FlaskConical, FolderKanban, Clock, CheckCircle2 } from "lucide-react";
+import { Plus, FlaskConical, FolderKanban, Clock, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 
 const statusConfig = {
@@ -16,7 +16,7 @@ const statusConfig = {
 
 type Test = {
   id: string; name: string; hypothesis: string; status: string; createdAt: Date;
-  startedAt: Date | null; concludedAt: Date | null;
+  startedAt: Date | null; concludedAt: Date | null; result: string | null;
   project: { id: string; name: string } | null;
   team: { id: string; name: string } | null;
   _count: { variants: number };
@@ -46,10 +46,22 @@ function TestCard({ test }: { test: Test }) {
             <CardTitle className="text-sm font-semibold leading-snug group-hover:text-primary transition-colors">
               {test.name}
             </CardTitle>
-            <Badge className={`text-[10px] border-0 shrink-0 flex items-center gap-1 ${sc.className}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
-              {sc.label}
-            </Badge>
+            <div className="flex items-center gap-1 shrink-0">
+              {test.result === "won" && (
+                <Badge className="text-[10px] border-0 flex items-center gap-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <TrendingUp className="h-3 w-3" /> Won
+                </Badge>
+              )}
+              {test.result === "lost" && (
+                <Badge className="text-[10px] border-0 flex items-center gap-1 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                  <TrendingDown className="h-3 w-3" /> Lost
+                </Badge>
+              )}
+              <Badge className={`text-[10px] border-0 flex items-center gap-1 ${sc.className}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
+                {sc.label}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
