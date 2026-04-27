@@ -10,7 +10,7 @@ import { MetricsChart } from "@/components/ab-tests/MetricsChart";
 import { MetricLogger } from "@/components/ab-tests/MetricLogger";
 import { ABStatusControls } from "@/components/ab-tests/ABStatusControls";
 import { ResultsPanel } from "@/components/ab-tests/ResultsPanel";
-import { ArrowLeft, FlaskConical, Calendar, Clock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, FlaskConical, Calendar, Clock, CheckCircle2, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const STATUS_CONFIG = {
@@ -129,6 +129,16 @@ export default async function ABTestDetailPage({ params }: { params: Promise<{ t
             <span className={cn("text-xs font-semibold px-2.5 py-0.5 rounded-full", status.className)}>
               {status.label}
             </span>
+            {test.result === "won" && (
+              <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                <TrendingUp className="h-3.5 w-3.5" /> Won
+              </span>
+            )}
+            {test.result === "lost" && (
+              <span className="flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                <TrendingDown className="h-3.5 w-3.5" /> Lost
+              </span>
+            )}
           </div>
           <p className="text-sm text-muted-foreground">
             By {test.owner.name ?? test.owner.email} · Created {format(new Date(test.createdAt), "MMM d, yyyy")}
