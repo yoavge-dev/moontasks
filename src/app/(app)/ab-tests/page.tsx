@@ -6,8 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { LinkButton } from "@/components/ui/link-button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, FlaskConical, FolderKanban } from "lucide-react";
-import { format } from "date-fns";
+import { Plus, FlaskConical, FolderKanban, Clock, CheckCircle2 } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 
 const statusConfig = {
   draft:     { label: "Draft",     dot: "bg-slate-400",   className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300" },
@@ -17,6 +17,7 @@ const statusConfig = {
 
 type Test = {
   id: string; name: string; hypothesis: string; status: string; createdAt: Date;
+  startedAt: Date | null; concludedAt: Date | null;
   project: { id: string; name: string } | null;
   team: { id: string; name: string } | null;
   _count: { variants: number };
@@ -24,6 +25,20 @@ type Test = {
 
 function TestCard({ test }: { test: Test }) {
   const sc = statusConfig[test.status as keyof typeof statusConfig] ?? statusConfig.draft;
+
+  const daysBadge = (() => {
+    if (test.status === "running" && test.startedAt) {
+      const days = differenceInDays(new Date(), test.startedAt);
+      return { label: `${days}d running`, icon: Clock, className: "text-emerald-700 bg-emerald-50 dark:text-emerald-400 dark:bg-emerald-900/20" };
+    }
+    if (test.status === "concluded" && test.startedAt) {
+      const end = test.concludedAt ?? new Date();
+      const days = differenceInDays(end, test.startedAt);
+      return { label: `Ran ${days}d`, icon: CheckCircle2, className: "text-violet-700 bg-violet-50 dark:text-violet-400 dark:bg-violet-900/20" };
+    }
+    return null;
+  })();
+
   return (
     <Link href={`/ab-tests/${test.id}`}>
       <Card className="hover:shadow-md transition-all hover:-translate-y-0.5 h-full group">
@@ -42,7 +57,14 @@ function TestCard({ test }: { test: Test }) {
           <p className="text-sm text-muted-foreground line-clamp-2">{test.hypothesis}</p>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{test._count.variants} variant{test._count.variants !== 1 ? "s" : ""}</span>
-            <span>{format(new Date(test.createdAt), "MMM d, yyyy")}</span>
+            {daysBadge ? (
+              <span className={`flex items-center gap-1 font-medium px-1.5 py-0.5 rounded-md ${daysBadge.className}`}>
+                <daysBadge.icon className="h-3 w-3" />
+                {daysBadge.label}
+              </span>
+            ) : (
+              <span>{format(new Date(test.createdAt), "MMM d, yyyy")}</span>
+            )}
           </div>
           {test.team && (
             <span className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{test.team.name}</span>
@@ -63,7 +85,9 @@ export default async function ABTestsPage() {
 
   const tests = await prisma.aBTest.findMany({
     where: { OR: [{ ownerId: userId }, { teamId: { in: teamIds } }] },
-    include: {
+    select: {
+      id: true, name: true, hypothesis: true, status: true, createdAt: true,
+      startedAt: true, concludedAt: true,
       team: { select: { id: true, name: true } },
       project: { select: { id: true, name: true } },
       _count: { select: { variants: true } },
