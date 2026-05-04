@@ -153,14 +153,12 @@ export function Annotator() {
     const h = Math.abs(pos.y - drawStart.y);
 
     if (w > 1.5 && h > 1.5) {
-      const fields = getFieldsFor(activeType);
       const id = `ann-${Date.now()}`;
       setAnnotations((prev) => [
         ...prev,
         {
           id, label: "", sourceType: activeType,
-          fieldPath: fields[0]?.path ?? "N/A",
-          fieldType: fields[0]?.type ?? "text",
+          fieldPath: "N/A", fieldType: "text",
           notes: "", x, y, w, h,
         },
       ]);
@@ -279,10 +277,7 @@ export function Annotator() {
                     {(["section", "provider", "hardcoded"] as SourceType[]).map((t) => (
                       <button
                         key={t}
-                        onClick={() => {
-                          const fields = getFieldsFor(t);
-                          update(selected.id, { sourceType: t, fieldPath: fields[0]?.path ?? "N/A", fieldType: fields[0]?.type ?? "N/A" });
-                        }}
+                        onClick={() => update(selected.id, { sourceType: t as SourceType, fieldPath: "N/A", fieldType: "text" })}
                         className={cn(
                           "flex-1 text-[10px] font-semibold py-1 rounded border transition-colors",
                           selected.sourceType === t ? cfg(t).toolbarActive : "border-border text-muted-foreground hover:bg-muted/50"
@@ -297,19 +292,12 @@ export function Annotator() {
                 {selected.sourceType !== "hardcoded" && (
                   <div>
                     <label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Field Path</label>
-                    <select
-                      value={selected.fieldPath}
-                      onChange={(e) => {
-                        const fields = getFieldsFor(selected.sourceType);
-                        const f = fields.find((f) => f.path === e.target.value);
-                        update(selected.id, { fieldPath: e.target.value, fieldType: f?.type ?? selected.fieldType });
-                      }}
-                      className="w-full h-7 text-[11px] font-mono rounded-md border border-input bg-background px-2 mt-1 outline-none focus:ring-1 focus:ring-ring"
-                    >
-                      {getFieldsFor(selected.sourceType).map((f) => (
-                        <option key={f.path} value={f.path}>{f.path}</option>
-                      ))}
-                    </select>
+                    <Input
+                      value={selected.fieldPath === "N/A" ? "" : selected.fieldPath}
+                      onChange={(e) => update(selected.id, { fieldPath: e.target.value || "N/A" })}
+                      placeholder="e.g. provider.offers.amount"
+                      className="h-7 text-[11px] font-mono mt-1"
+                    />
                   </div>
                 )}
 
