@@ -85,9 +85,13 @@ export function CMSSpecifier() {
         setMessages(updated);
         const parsed = parseResult(data.message);
         if (parsed) setResult(parsed);
+      } else if (data.error) {
+        const errMsg: ChatMessage = { role: "assistant", content: `Error: ${data.error}` };
+        setMessages([...allMessages, errMsg]);
       }
-    } catch {
-      // silently fail — user can retry
+    } catch (err) {
+      const errMsg: ChatMessage = { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "Something went wrong"}` };
+      setMessages([...allMessages, errMsg]);
     } finally {
       setIsLoading(false);
     }

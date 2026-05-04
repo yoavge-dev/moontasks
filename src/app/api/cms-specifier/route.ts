@@ -74,15 +74,21 @@ export async function POST(req: Request) {
     return { role: m.role, content: m.content };
   });
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 4096,
-    system: SYSTEM_PROMPT,
-    messages: anthropicMessages,
-  });
+  try {
+    const response = await client.messages.create({
+      model: "claude-opus-4-5",
+      max_tokens: 4096,
+      system: SYSTEM_PROMPT,
+      messages: anthropicMessages,
+    });
 
-  const block = response.content[0];
-  if (block.type !== "text") return NextResponse.json({ error: "Unexpected response" }, { status: 500 });
+    const block = response.content[0];
+    if (block.type !== "text") return NextResponse.json({ error: "Unexpected response" }, { status: 500 });
 
-  return NextResponse.json({ message: block.text });
+    return NextResponse.json({ message: block.text });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    console.error("[cms-specifier]", message);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
