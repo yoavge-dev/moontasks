@@ -190,7 +190,7 @@ export function Annotator({ featureId, initialName = "", initialScreenshotUrl, i
 
   // ── Save ──
   const handleSave = async () => {
-    if (!featureName.trim()) { alert("Please enter a feature name."); return; }
+    if (!featureName.trim()) { alert("Please enter a spec name."); return; }
     if (!imageUrl) { alert("Please upload a screenshot."); return; }
     setIsSaving(true);
     try {
@@ -257,18 +257,18 @@ export function Annotator({ featureId, initialName = "", initialScreenshotUrl, i
         <div className="px-4 pt-3 pb-3 border-b shrink-0 space-y-2.5">
           <div className="flex items-center gap-2">
             <LinkButton href="/annotator" variant="ghost" size="sm" className="h-7 px-2 -ml-1">
-              <ArrowLeft className="h-3.5 w-3.5 mr-1" />Features
+              <ArrowLeft className="h-3.5 w-3.5 mr-1" />All specs
             </LinkButton>
           </div>
           <Input
             value={featureName}
             onChange={(e) => setFeatureName(e.target.value)}
-            placeholder="Feature name…"
+            placeholder="Spec name…"
             className="h-8 text-sm font-semibold"
           />
           <Button onClick={handleSave} disabled={isSaving || !featureName.trim() || !imageUrl} size="sm" className="w-full h-7 text-xs gap-1.5">
             {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-            {isSaving ? "Saving…" : isEditing ? "Save changes" : "Save feature"}
+            {isSaving ? "Saving…" : isEditing ? "Save changes" : "Save spec"}
           </Button>
         </div>
 

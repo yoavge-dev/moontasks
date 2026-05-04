@@ -26,7 +26,7 @@ export default async function AnnotatorListPage() {
         </div>
         <LinkButton href="/annotator/new">
           <Plus className="h-4 w-4 mr-1.5" />
-          New feature
+          New spec
         </LinkButton>
       </div>
 
@@ -34,11 +34,11 @@ export default async function AnnotatorListPage() {
         <div className="flex flex-col items-center justify-center py-24 text-center text-muted-foreground gap-4 border-2 border-dashed border-border rounded-xl">
           <Layers className="h-10 w-10 opacity-25" />
           <div>
-            <p className="text-sm font-medium">No annotated features yet</p>
-            <p className="text-xs mt-1">Upload a screenshot and annotate it to create your first feature spec</p>
+            <p className="text-sm font-medium">No specs yet</p>
+            <p className="text-xs mt-1">Upload a screenshot and annotate CMS fields to create your first spec</p>
           </div>
           <LinkButton href="/annotator/new" variant="outline" size="sm">
-            <Plus className="h-4 w-4 mr-1" /> New feature
+            <Plus className="h-4 w-4 mr-1" /> New spec
           </LinkButton>
         </div>
       ) : (
