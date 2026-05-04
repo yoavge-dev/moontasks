@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen, CalendarCheck } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen, CalendarCheck, ScanSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -71,6 +71,17 @@ export function Sidebar() {
             {label}
           </Link>
         ))}
+
+        <div className="pt-4 pb-1.5 px-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30">
+            CMS
+          </p>
+        </div>
+
+        <Link href="/cms-specifier" className={linkClass("/cms-specifier")}>
+          <ScanSearch className="h-4 w-4 shrink-0" />
+          CMS Specifier
+        </Link>
       </nav>
     </aside>
   );
