@@ -1,12 +1,10 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { Upload, Send, Copy, Check, FileSearch, RefreshCw } from "lucide-react";
+import { useState, useRef, useCallback, useId } from "react";
+import { Upload, Plus, Trash2, Copy, Check, FileSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-
-type ChatMessage = { role: "user" | "assistant"; content: string };
 
 interface Annotation {
   id: string;
@@ -14,145 +12,68 @@ interface Annotation {
   type: "section" | "provider" | "hardcoded";
   x: number;
   y: number;
-  w: number;
-  h: number;
-}
-
-interface SpecRow {
-  element: string;
-  description: string;
-  sourceType: string;
   fieldPath: string;
   fieldType: string;
   notes: string;
 }
 
-interface AnalysisResult {
-  annotations: Annotation[];
-  spec: SpecRow[];
-}
+const TYPE_OPTIONS = [
+  { value: "provider",  label: "Provider (CMS)",  pill: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",  pin: "bg-blue-500"  },
+  { value: "section",   label: "Section",          pill: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",    pin: "bg-red-500"   },
+  { value: "hardcoded", label: "Hardcoded",        pill: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400", pin: "bg-amber-400" },
+] as const;
 
-const TYPE_STYLES = {
-  section:    { box: "border-red-500 bg-red-500/10",   badge: "bg-red-500",   pill: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400" },
-  provider:   { box: "border-blue-500 bg-blue-500/10", badge: "bg-blue-500",  pill: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-  hardcoded:  { box: "border-amber-400 bg-amber-400/10", badge: "bg-amber-400", pill: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400" },
-};
+const FIELD_TYPES = ["text", "image", "richtext", "number", "boolean", "array", "url", "date", "N/A"];
 
-function parseResult(text: string): AnalysisResult | null {
-  const match = text.match(/```json\s*([\s\S]*?)\s*```/);
-  if (!match) return null;
-  try { return JSON.parse(match[1]); } catch { return null; }
-}
-
-function cleanAssistantText(text: string): string {
-  return text.replace(/```json[\s\S]*?```/g, "").trim();
+function typeStyle(type: string) {
+  return TYPE_OPTIONS.find((t) => t.value === type) ?? TYPE_OPTIONS[0];
 }
 
 export function CMSSpecifier() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState("");
-  const [imageBase64, setImageBase64] = useState<string | null>(null);
-  const [imageMimeType, setImageMimeType] = useState("image/jpeg");
   const [imageObjectUrl, setImageObjectUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [selected, setSelected] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const chatEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isLoading]);
-
-  const sendToAPI = useCallback(async (
-    allMessages: ChatMessage[],
-    b64: string | null,
-    mime: string
-  ) => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/cms-specifier", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: allMessages, imageBase64: b64, imageMimeType: mime }),
-      });
-      const data = await res.json();
-      if (data.message) {
-        const assistantMsg: ChatMessage = { role: "assistant", content: data.message };
-        const updated = [...allMessages, assistantMsg];
-        setMessages(updated);
-        const parsed = parseResult(data.message);
-        if (parsed) setResult(parsed);
-      } else if (data.error) {
-        const errMsg: ChatMessage = { role: "assistant", content: `Error: ${data.error}` };
-        setMessages([...allMessages, errMsg]);
-      }
-    } catch (err) {
-      const errMsg: ChatMessage = { role: "assistant", content: `Error: ${err instanceof Error ? err.message : "Something went wrong"}` };
-      setMessages([...allMessages, errMsg]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const uid = useId();
 
   const handleFile = useCallback((file: File) => {
     if (!file.type.startsWith("image/")) return;
     if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const dataUrl = e.target?.result as string;
-      const base64 = dataUrl.split(",")[1];
-      const mime = file.type;
-      const objUrl = URL.createObjectURL(file);
-
-      setImageBase64(base64);
-      setImageMimeType(mime);
-      setImageObjectUrl(objUrl);
-      setMessages([]);
-      setResult(null);
-
-      const initialMsg: ChatMessage = {
-        role: "user",
-        content: "Please analyze this screenshot and ask me clarifying questions to generate a CMS field specification.",
-      };
-      const initial = [initialMsg];
-      setMessages(initial);
-      sendToAPI(initial, base64, mime);
-    };
-    reader.readAsDataURL(file);
-  }, [imageObjectUrl, sendToAPI]);
-
-  const handleSend = () => {
-    if (!input.trim() || isLoading || !imageBase64) return;
-    const userMsg: ChatMessage = { role: "user", content: input.trim() };
-    const updated = [...messages, userMsg];
-    setMessages(updated);
-    setInput("");
-    sendToAPI(updated, imageBase64, imageMimeType);
-  };
-
-  const reset = useCallback(() => {
-    if (imageObjectUrl) URL.revokeObjectURL(imageObjectUrl);
-    setMessages([]);
-    setInput("");
-    setImageBase64(null);
-    setImageObjectUrl(null);
-    setResult(null);
+    setImageObjectUrl(URL.createObjectURL(file));
+    setAnnotations([]);
+    setSelected(null);
   }, [imageObjectUrl]);
 
+  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const id = `${uid}-${Date.now()}`;
+    const next: Annotation = { id, label: `Field ${annotations.length + 1}`, type: "provider", x, y, fieldPath: "", fieldType: "text", notes: "" };
+    setAnnotations((prev) => [...prev, next]);
+    setSelected(id);
+  };
+
+  const update = (id: string, patch: Partial<Annotation>) =>
+    setAnnotations((prev) => prev.map((a) => (a.id === id ? { ...a, ...patch } : a)));
+
+  const remove = (id: string) => {
+    setAnnotations((prev) => prev.filter((a) => a.id !== id));
+    if (selected === id) setSelected(null);
+  };
+
   const exportMarkdown = () => {
-    if (!result) return;
-    const rows = result.spec
-      .map((r) => `| ${r.element} | ${r.description} | ${r.sourceType} | ${r.fieldPath} | ${r.fieldType} | ${r.notes} |`)
+    const rows = annotations
+      .map((a, i) => `| ${i + 1}. ${a.label} | ${a.type} | ${a.fieldPath || "N/A"} | ${a.fieldType} | ${a.notes} |`)
       .join("\n");
     const md = [
       "# CMS Field Specification",
       "",
-      "| Element | Description | Source Type | Field Path | Field Type | Notes |",
-      "|---------|-------------|-------------|------------|------------|-------|",
+      "| Element | Source Type | Field Path | Field Type | Notes |",
+      "|---------|-------------|------------|------------|-------|",
       rows,
     ].join("\n");
     navigator.clipboard.writeText(md);
@@ -161,138 +82,152 @@ export function CMSSpecifier() {
   };
 
   return (
-    <div
-      className="flex overflow-hidden -mx-6 -mt-6"
-      style={{ height: "calc(100vh - 3rem)" }}
-    >
-      {/* ── Left panel: upload + chat ── */}
-      <div className="w-[400px] shrink-0 flex flex-col border-r bg-background">
+    <div className="flex overflow-hidden -mx-6 -mt-6" style={{ height: "calc(100vh - 3rem)" }}>
 
-        {/* Upload zone */}
+      {/* ── Left: upload + annotation list ── */}
+      <div className="w-[360px] shrink-0 flex flex-col border-r bg-background overflow-hidden">
+
+        {/* Upload */}
         <div
-          className={cn("p-4 border-b transition-colors", isDragging && "bg-primary/5")}
+          className={cn("p-4 border-b transition-colors shrink-0", isDragging && "bg-primary/5")}
           onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
           onDragLeave={() => setIsDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setIsDragging(false);
-            const f = e.dataTransfer.files[0];
-            if (f) handleFile(f);
-          }}
+          onDrop={(e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
         >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
           {imageObjectUrl ? (
-            <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              <img
-                src={imageObjectUrl}
-                alt="Uploaded screenshot"
-                className="w-full max-h-44 object-contain rounded-lg border"
-              />
-              <div className="absolute inset-0 bg-background/0 group-hover:bg-background/40 rounded-lg flex items-center justify-center transition-all">
-                <button
-                  onClick={(e) => { e.stopPropagation(); reset(); }}
-                  className="opacity-0 group-hover:opacity-100 bg-background border rounded-full p-1.5 shadow-sm transition-opacity"
-                  title="Remove image"
-                >
-                  <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-                </button>
+            <div className="flex items-center gap-3">
+              <img src={imageObjectUrl} alt="Uploaded" className="h-12 w-20 object-cover rounded border shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-medium truncate">Screenshot uploaded</p>
+                <p className="text-[11px] text-muted-foreground">Click on the image to place field markers</p>
               </div>
+              <button onClick={() => fileInputRef.current?.click()} className="text-[11px] text-primary shrink-0">Replace</button>
             </div>
           ) : (
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-border rounded-lg p-6 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
+              className="w-full border-2 border-dashed border-border rounded-lg p-5 flex flex-col items-center gap-2 text-muted-foreground hover:border-primary/50 hover:text-foreground transition-colors"
             >
-              <Upload className="h-6 w-6" />
+              <Upload className="h-5 w-5" />
               <span className="text-sm font-medium">Upload screenshot</span>
               <span className="text-xs">Drag & drop or click to browse</span>
             </button>
           )}
         </div>
 
-        {/* Chat messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {messages.length === 0 && !imageObjectUrl && (
-            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground gap-3 pb-8">
-              <FileSearch className="h-10 w-10 opacity-25" />
-              <div className="space-y-1">
-                <p className="text-sm font-medium">No screenshot yet</p>
-                <p className="text-xs">Upload a UI screenshot to start generating a CMS field specification.</p>
-              </div>
+        {/* Annotation list */}
+        <div className="flex-1 overflow-y-auto">
+          {annotations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground gap-3 p-6">
+              <FileSearch className="h-9 w-9 opacity-25" />
+              <p className="text-sm">{imageObjectUrl ? "Click anywhere on the screenshot to place a field marker." : "Upload a screenshot to get started."}</p>
+            </div>
+          ) : (
+            <div className="p-3 space-y-2">
+              {annotations.map((ann, i) => {
+                const ts = typeStyle(ann.type);
+                const isOpen = selected === ann.id;
+                return (
+                  <div
+                    key={ann.id}
+                    className={cn("rounded-lg border transition-all", isOpen ? "border-primary/40 shadow-sm" : "border-border")}
+                  >
+                    {/* Header row */}
+                    <div
+                      className="flex items-center gap-2 p-2.5 cursor-pointer"
+                      onClick={() => setSelected(isOpen ? null : ann.id)}
+                    >
+                      <span className={cn("h-5 w-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center shrink-0", ts.pin)}>
+                        {i + 1}
+                      </span>
+                      <span className="flex-1 text-sm font-medium truncate">{ann.label || `Field ${i + 1}`}</span>
+                      <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0", ts.pill)}>{ts.label}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); remove(ann.id); }}
+                        className="text-muted-foreground/40 hover:text-destructive transition-colors shrink-0"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Expanded form */}
+                    {isOpen && (
+                      <div className="px-3 pb-3 space-y-2 border-t pt-2.5">
+                        <div>
+                          <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Label</label>
+                          <Input
+                            value={ann.label}
+                            onChange={(e) => update(ann.id, { label: e.target.value })}
+                            className="h-7 text-xs mt-1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Source Type</label>
+                          <div className="flex gap-1 mt-1">
+                            {TYPE_OPTIONS.map((t) => (
+                              <button
+                                key={t.value}
+                                onClick={() => update(ann.id, { type: t.value as Annotation["type"] })}
+                                className={cn("flex-1 text-[10px] font-semibold py-1 rounded border transition-colors",
+                                  ann.type === t.value ? `${t.pin} text-white border-transparent` : "border-border text-muted-foreground hover:border-primary/40"
+                                )}
+                              >
+                                {t.value === "provider" ? "Provider" : t.value === "section" ? "Section" : "Static"}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Field Path</label>
+                          <Input
+                            value={ann.fieldPath}
+                            onChange={(e) => update(ann.id, { fieldPath: e.target.value })}
+                            placeholder="e.g. product.title"
+                            className="h-7 text-xs mt-1 font-mono"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Field Type</label>
+                          <select
+                            value={ann.fieldType}
+                            onChange={(e) => update(ann.id, { fieldType: e.target.value })}
+                            className="w-full h-7 text-xs mt-1 rounded-md border border-input bg-background px-2 outline-none focus:ring-1 focus:ring-ring"
+                          >
+                            {FIELD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Notes</label>
+                          <Input
+                            value={ann.notes}
+                            onChange={(e) => update(ann.id, { notes: e.target.value })}
+                            placeholder="Optional notes"
+                            className="h-7 text-xs mt-1"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
-          {messages.map((m, i) => {
-            const isSpec = m.role === "assistant" && parseResult(m.content) !== null;
-            const displayText = m.role === "assistant" ? cleanAssistantText(m.content) : m.content;
-
-            return (
-              <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
-                <div
-                  className={cn(
-                    "max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap",
-                    m.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-br-sm"
-                      : "bg-muted text-foreground rounded-bl-sm"
-                  )}
-                >
-                  {isSpec ? (
-                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                      Spec generated — see the panel on the right
-                    </span>
-                  ) : (
-                    displayText || <span className="opacity-50 italic text-xs">…</span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-          {isLoading && (
-            <div className="flex justify-start">
-              <div className="bg-muted rounded-2xl rounded-bl-sm px-3.5 py-2.5">
-                <div className="flex gap-1 items-center h-4">
-                  {[0, 150, 300].map((delay) => (
-                    <span
-                      key={delay}
-                      className="w-1.5 h-1.5 bg-muted-foreground/40 rounded-full animate-bounce"
-                      style={{ animationDelay: `${delay}ms` }}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={chatEndRef} />
         </div>
 
-        {/* Input bar */}
-        <div className="border-t p-3 flex gap-2 items-end">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder={imageObjectUrl ? "Answer questions or add context…" : "Upload a screenshot first"}
-            disabled={!imageObjectUrl || isLoading}
-            className="min-h-[60px] max-h-[120px] resize-none text-sm"
-            rows={2}
-          />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading || !imageObjectUrl}
-            size="icon"
-            className="shrink-0"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
+        {/* Footer */}
+        {annotations.length > 0 && (
+          <div className="border-t p-3 shrink-0">
+            <Button variant="outline" size="sm" onClick={exportMarkdown} className="w-full gap-1.5 h-8 text-xs">
+              {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+              {copied ? "Copied!" : "Copy spec as Markdown"}
+            </Button>
+          </div>
+        )}
       </div>
 
-      {/* ── Right panel: annotated image + spec table ── */}
+      {/* ── Right: annotated image + spec table ── */}
       <div className="flex-1 flex flex-col overflow-hidden bg-muted/20">
         {!imageObjectUrl ? (
           <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground gap-3">
@@ -301,34 +236,32 @@ export function CMSSpecifier() {
           </div>
         ) : (
           <>
-            {/* Annotated image area */}
+            {/* Clickable annotated image */}
             <div className="flex-1 overflow-auto flex items-start justify-center p-6 min-h-0">
-              <div className="relative inline-block">
+              <div
+                className="relative inline-block cursor-crosshair"
+                onClick={handleImageClick}
+              >
                 <img
                   src={imageObjectUrl}
                   alt="Screenshot"
-                  className="rounded-lg border shadow-sm max-h-[55vh] max-w-full block"
+                  className="rounded-lg border shadow-sm max-h-[55vh] max-w-full block select-none"
+                  draggable={false}
                 />
-                {result?.annotations.map((ann) => {
-                  const style = TYPE_STYLES[ann.type] ?? TYPE_STYLES.hardcoded;
+                {annotations.map((ann, i) => {
+                  const ts = typeStyle(ann.type);
                   return (
                     <div
                       key={ann.id}
-                      className={cn("absolute border-2 rounded pointer-events-none", style.box)}
-                      style={{
-                        left: `${ann.x}%`,
-                        top: `${ann.y}%`,
-                        width: `${ann.w}%`,
-                        height: `${ann.h}%`,
-                      }}
+                      className="absolute pointer-events-none"
+                      style={{ left: `${ann.x}%`, top: `${ann.y}%`, transform: "translate(-50%, -50%)" }}
                     >
-                      <span
-                        className={cn(
-                          "absolute -top-5 left-0 text-[9px] font-bold px-1 py-0.5 rounded text-white whitespace-nowrap max-w-[120px] overflow-hidden text-ellipsis block",
-                          style.badge
-                        )}
-                      >
-                        {ann.label}
+                      <span className={cn(
+                        "h-5 w-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center shadow-md ring-2 ring-white",
+                        ts.pin,
+                        selected === ann.id && "ring-primary scale-125"
+                      )}>
+                        {i + 1}
                       </span>
                     </div>
                   );
@@ -337,53 +270,56 @@ export function CMSSpecifier() {
             </div>
 
             {/* Legend */}
-            {result && (
-              <div className="px-6 pb-2 flex items-center gap-5 text-xs text-muted-foreground border-t pt-2.5">
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-red-500 shrink-0" />Section</span>
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-blue-500 shrink-0" />Provider (CMS)</span>
-                <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-amber-400 shrink-0" />Hardcoded</span>
-              </div>
-            )}
+            <div className="px-6 pb-2 pt-1 flex items-center gap-5 text-xs text-muted-foreground border-t">
+              {TYPE_OPTIONS.map((t) => (
+                <span key={t.value} className="flex items-center gap-1.5 pt-2">
+                  <span className={cn("w-2.5 h-2.5 rounded-full shrink-0", t.pin)} />
+                  {t.label}
+                </span>
+              ))}
+              <span className="flex items-center gap-1 pt-2 ml-auto text-[11px]">
+                <Plus className="h-3 w-3" /> Click image to add marker
+              </span>
+            </div>
 
             {/* Spec table */}
-            {result?.spec && result.spec.length > 0 && (
-              <div className="border-t bg-background overflow-auto" style={{ maxHeight: "42vh" }}>
-                <div className="flex items-center justify-between px-5 py-3 border-b sticky top-0 bg-background z-10">
+            {annotations.length > 0 && (
+              <div className="border-t bg-background overflow-auto" style={{ maxHeight: "40vh" }}>
+                <div className="px-5 py-3 border-b sticky top-0 bg-background z-10">
                   <h3 className="text-sm font-semibold">CMS Field Specification</h3>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={exportMarkdown}
-                    className="gap-1.5 h-7 text-xs"
-                  >
-                    {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                    {copied ? "Copied!" : "Copy as Markdown"}
-                  </Button>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
                       <tr className="border-b bg-muted/40">
-                        {["Element", "Description", "Source", "Field Path", "Type", "Notes"].map((h) => (
+                        {["#", "Element", "Source", "Field Path", "Type", "Notes"].map((h) => (
                           <th key={h} className="text-left px-4 py-2.5 font-semibold text-muted-foreground whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {result.spec.map((row, i) => {
-                        const style = TYPE_STYLES[row.sourceType as keyof typeof TYPE_STYLES] ?? TYPE_STYLES.hardcoded;
+                      {annotations.map((ann, i) => {
+                        const ts = typeStyle(ann.type);
                         return (
-                          <tr key={i} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                            <td className="px-4 py-2.5 font-medium whitespace-nowrap">{row.element}</td>
-                            <td className="px-4 py-2.5 text-muted-foreground max-w-[200px]">{row.description}</td>
+                          <tr
+                            key={ann.id}
+                            className={cn("border-b last:border-0 cursor-pointer transition-colors", selected === ann.id ? "bg-muted/50" : "hover:bg-muted/20")}
+                            onClick={() => setSelected(selected === ann.id ? null : ann.id)}
+                          >
                             <td className="px-4 py-2.5">
-                              <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap", style.pill)}>
-                                {row.sourceType}
+                              <span className={cn("h-5 w-5 rounded-full text-white text-[10px] font-bold flex items-center justify-center", ts.pin)}>
+                                {i + 1}
                               </span>
                             </td>
-                            <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground whitespace-nowrap">{row.fieldPath}</td>
-                            <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{row.fieldType}</td>
-                            <td className="px-4 py-2.5 text-muted-foreground">{row.notes}</td>
+                            <td className="px-4 py-2.5 font-medium whitespace-nowrap">{ann.label || `Field ${i + 1}`}</td>
+                            <td className="px-4 py-2.5">
+                              <span className={cn("px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap", ts.pill)}>
+                                {ann.type}
+                              </span>
+                            </td>
+                            <td className="px-4 py-2.5 font-mono text-[10px] text-muted-foreground whitespace-nowrap">{ann.fieldPath || "—"}</td>
+                            <td className="px-4 py-2.5 text-muted-foreground whitespace-nowrap">{ann.fieldType}</td>
+                            <td className="px-4 py-2.5 text-muted-foreground">{ann.notes || "—"}</td>
                           </tr>
                         );
                       })}
