@@ -28,8 +28,9 @@ model User {
   notifications      Notification[]   @relation("NotificationRecipient")
   actorNotifications Notification[]   @relation("NotificationActor")
   sentInvites        TeamInvite[]
-  competitors        Competitor[]
-  libraryWidgets     LibraryWidget[]
+  competitors         Competitor[]
+  libraryWidgets      LibraryWidget[]
+  annotatedFeatures   AnnotatedFeature[]
 }
 
 model Competitor {
@@ -311,6 +312,19 @@ model Notification {
 
   @@index([userId])
   @@index([userId, read])
+}
+
+model AnnotatedFeature {
+  id            String   @id @default(cuid())
+  name          String
+  screenshotUrl String
+  annotations   String   @default("[]")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
 }
 
 model TeamInvite {
