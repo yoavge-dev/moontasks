@@ -2,90 +2,98 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Anthropic from "@anthropic-ai/sdk";
+import { CMS_CONFIG } from "@/lib/cms-config";
 
 const client = new Anthropic();
 
-const SYSTEM_PROMPT = `You are a CMS field specifier. You analyze UI component screenshots and help product managers create precise CMS field specifications.
+function buildSystemPrompt() {
+  const sectionFields = CMS_CONFIG.section.map((f) => `  - ${f.path} (${f.type}) — ${f.hint}`).join("\n");
+  const providerFields = CMS_CONFIG.provider.map((f) => `  - ${f.path} (${f.type}) — ${f.hint}`).join("\n");
 
-WORKFLOW:
-1. When given a screenshot, study it carefully and ask 3-5 targeted clarifying questions:
-   - Which text/content elements are dynamic (fetched from CMS or API)?
-   - What is the CMS field path structure (e.g., product.title, hero.subtitle, section.cta.label)?
-   - Which elements are hardcoded/static and will never change?
-   - Which areas are layout containers or section wrappers?
-   - Are there any repeating items (arrays)?
+  return `You are a CMS annotation engine. You analyze UI screenshots and map every visible element to the correct CMS field based on these rules:
 
-2. After the user answers, ask follow-up questions only if truly necessary.
+ANNOTATION RULES:
+- "section" (red) — elements that are editable at the section/page level, not per-provider
+- "provider" (blue) — elements driven by CMS provider data
+- "hardcoded" (yellow) — static elements that never change
 
-3. Once you have enough information, output the spec. Your response should contain ONLY the JSON block below — no intro text, no explanation after it:
+SECTION FIELDS:
+${sectionFields}
+
+PROVIDER FIELDS:
+${providerFields}
+
+TASK:
+Look at the screenshot carefully. Identify every meaningful UI element and annotate it.
+For each element, estimate its bounding box as percentages (0–100) of the image dimensions.
+
+Return ONLY this JSON — no explanation, no text before or after:
 
 \`\`\`json
 {
   "annotations": [
-    { "id": "1", "label": "Element Name", "type": "section", "x": 0, "y": 0, "w": 100, "h": 12 }
-  ],
-  "spec": [
-    { "element": "Element Name", "description": "What it displays", "sourceType": "section", "fieldPath": "N/A", "fieldType": "N/A", "notes": "" }
+    {
+      "id": "1",
+      "label": "short element name",
+      "sourceType": "section | provider | hardcoded",
+      "fieldPath": "exact.field.path or N/A",
+      "fieldType": "text | image | richtext | number | boolean | array | url | date | N/A",
+      "x": 10,
+      "y": 5,
+      "w": 30,
+      "h": 8
+    }
   ]
 }
 \`\`\`
 
-ANNOTATION TYPES:
-- "section" — layout containers/wrappers
-- "provider" — dynamic content from CMS or API
-- "hardcoded" — static content that never changes
-
-COORDINATES: x, y, w, h are percentages (0–100) of the image. Estimate as best you can from what you see.
-
-FIELD TYPES: text | image | richtext | number | boolean | array | url | date | N/A
-
-Keep questions concise and conversational. Output the JSON block only when you're confident you have all necessary information.`;
+x, y = top-left corner as % of image. w, h = width/height as % of image.
+Be precise. Annotate every distinct element you can see.`;
+}
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await req.json();
-  const { messages, imageBase64, imageMimeType } = body as {
-    messages: Array<{ role: "user" | "assistant"; content: string }>;
-    imageBase64?: string | null;
+  const { imageBase64, imageMimeType } = body as {
+    imageBase64: string;
     imageMimeType?: string;
   };
 
-  if (!messages?.length) return NextResponse.json({ error: "No messages" }, { status: 400 });
-
-  const anthropicMessages: Anthropic.MessageParam[] = messages.map((m, i) => {
-    if (i === 0 && imageBase64) {
-      return {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: (imageMimeType ?? "image/jpeg") as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
-              data: imageBase64,
-            },
-          },
-          { type: "text", text: m.content },
-        ],
-      };
-    }
-    return { role: m.role, content: m.content };
-  });
+  if (!imageBase64) return NextResponse.json({ error: "No image provided" }, { status: 400 });
 
   try {
     const response = await client.messages.create({
       model: "claude-opus-4-5",
       max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: anthropicMessages,
+      system: buildSystemPrompt(),
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: (imageMimeType ?? "image/jpeg") as "image/jpeg" | "image/png" | "image/gif" | "image/webp",
+                data: imageBase64,
+              },
+            },
+            { type: "text", text: "Annotate every element in this screenshot according to the CMS field rules." },
+          ],
+        },
+      ],
     });
 
     const block = response.content[0];
     if (block.type !== "text") return NextResponse.json({ error: "Unexpected response" }, { status: 500 });
 
-    return NextResponse.json({ message: block.text });
+    const match = block.text.match(/```json\s*([\s\S]*?)\s*```/);
+    if (!match) return NextResponse.json({ error: "No JSON in response", raw: block.text }, { status: 500 });
+
+    const result = JSON.parse(match[1]);
+    return NextResponse.json({ data: result });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     console.error("[cms-specifier]", message);
