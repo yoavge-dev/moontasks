@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { RoadmapColumns } from "@/components/projects/RoadmapColumns";
 import { ProjectHeader } from "@/components/projects/ProjectHeader";
+import { ProjectLogo } from "@/components/projects/ProjectLogo";
 import { ShareRoadmapButton } from "@/components/projects/ShareRoadmapButton";
 import { ArrowLeft } from "lucide-react";
 
@@ -49,14 +50,22 @@ export default async function RoadmapDetailPage({
           </Link>
           <ShareRoadmapButton projectId={projectId} publicSlug={project.publicSlug ?? null} />
         </div>
-        <ProjectHeader
-          projectId={projectId}
-          name={project.name}
-          description={project.description}
-          url={project.url}
-          teamName={project.team?.name}
-          isOwner={isOwner}
-        />
+        <div className="flex items-start gap-4">
+          <ProjectLogo
+            projectId={projectId}
+            name={project.name}
+            logoUrl={project.logoUrl ?? null}
+            isOwner={isOwner}
+          />
+          <ProjectHeader
+            projectId={projectId}
+            name={project.name}
+            description={project.description}
+            url={project.url}
+            teamName={project.team?.name}
+            isOwner={isOwner}
+          />
+        </div>
       </div>
 
       <RoadmapColumns
