@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { RoadmapColumns } from "@/components/projects/RoadmapColumns";
-import { Link2 } from "lucide-react";
+import { Link2, ArrowLeft } from "lucide-react";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -24,6 +25,15 @@ export default async function PublicRoadmapPage({ params }: { params: Promise<{ 
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+        {/* Back link */}
+        <Link
+          href="/roadmap"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          All roadmaps
+        </Link>
+
         {/* Header */}
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Product Roadmap</p>
