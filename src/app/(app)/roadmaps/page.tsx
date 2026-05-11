@@ -15,7 +15,6 @@ export default async function RoadmapsPage() {
 
   const projects = await prisma.project.findMany({
     where: { OR: [{ ownerId: userId }, { teamId: { in: teamIds } }] },
-    include: { _count: { select: { roadmapItems: true } } },
     orderBy: { name: "asc" },
   });
 
@@ -25,7 +24,8 @@ export default async function RoadmapsPage() {
     logoUrl: p.logoUrl ?? null,
     publicSlug: p.publicSlug ?? null,
     isOwner: p.ownerId === userId,
-    itemCount: p._count.roadmapItems,
+    pmOwner: p.pmOwner ?? null,
+    ppcOwner: p.ppcOwner ?? null,
   }));
 
   return (

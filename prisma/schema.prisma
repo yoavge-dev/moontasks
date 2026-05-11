@@ -212,6 +212,7 @@ model Project {
   description String?
   url         String?
   ppcOwner    String?
+  pmOwner     String?
   publicSlug  String?  @unique
   logoUrl     String?
   ownerId     String

@@ -11,6 +11,7 @@ const createSchema = z.object({
   url: z.string().max(2000).optional(),
   teamId: z.string().optional(),
   ppcOwner: z.string().max(200).optional(),
+  pmOwner: z.string().max(200).optional(),
 });
 
 export async function GET() {
@@ -46,6 +47,7 @@ export async function POST(request: Request) {
       description: parsed.data.description,
       url: parsed.data.url || null,
       ppcOwner: parsed.data.ppcOwner || null,
+      pmOwner: parsed.data.pmOwner || null,
       ownerId: userId,
       teamId: parsed.data.teamId || null,
     },

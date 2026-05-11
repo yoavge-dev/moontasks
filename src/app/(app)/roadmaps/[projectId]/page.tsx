@@ -62,6 +62,8 @@ export default async function RoadmapDetailPage({
             name={project.name}
             description={project.description}
             url={project.url}
+            ppcOwner={project.ppcOwner}
+            pmOwner={project.pmOwner}
             teamName={project.team?.name}
             isOwner={isOwner}
           />

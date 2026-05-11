@@ -10,6 +10,7 @@ const updateSchema = z.object({
   description: z.string().max(2000).optional().nullable(),
   url: z.string().max(2000).optional().nullable(),
   ppcOwner: z.string().max(200).optional().nullable(),
+  pmOwner: z.string().max(200).optional().nullable(),
   generateSlug: z.boolean().optional(),
 });
 

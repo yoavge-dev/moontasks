@@ -9,7 +9,8 @@ interface Project {
   logoUrl: string | null;
   publicSlug: string | null;
   isOwner: boolean;
-  itemCount: number;
+  pmOwner: string | null;
+  ppcOwner: string | null;
 }
 
 const GRADIENTS = [
@@ -53,11 +54,18 @@ function ProjectCard({ project }: { project: Project }) {
         </div>
 
         {/* Info */}
-        <div className="px-3 py-2.5 space-y-0.5">
+        <div className="px-3 py-2.5 space-y-1">
           <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{project.name}</p>
-          <p className="text-xs text-muted-foreground">
-            {project.itemCount} item{project.itemCount !== 1 ? "s" : ""}
-          </p>
+          {(project.pmOwner || project.ppcOwner) ? (
+            <div className="flex flex-col gap-0.5">
+              {project.pmOwner && (
+                <p className="text-xs text-muted-foreground truncate">PM — {project.pmOwner}</p>
+              )}
+              {project.ppcOwner && (
+                <p className="text-xs text-muted-foreground truncate">PPC — {project.ppcOwner}</p>
+              )}
+            </div>
+          ) : null}
         </div>
       </div>
     </Link>
