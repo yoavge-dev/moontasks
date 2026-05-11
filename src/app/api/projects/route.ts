@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { generateProjectSlug } from "@/lib/slug";
 
 const createSchema = z.object({
   name: z.string().min(1).max(200),
@@ -50,5 +51,12 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ data: project }, { status: 201 });
+  // Auto-generate public slug after creation (uses ID for uniqueness)
+  const slug = generateProjectSlug(project.name, project.id);
+  const updated = await prisma.project.update({
+    where: { id: project.id },
+    data: { publicSlug: slug },
+  }).catch(() => project); // if slug collides somehow, skip
+
+  return NextResponse.json({ data: updated }, { status: 201 });
 }

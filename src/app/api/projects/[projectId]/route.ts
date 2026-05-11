@@ -3,12 +3,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { generateProjectSlug } from "@/lib/slug";
 
 const updateSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional().nullable(),
   url: z.string().max(2000).optional().nullable(),
   ppcOwner: z.string().max(200).optional().nullable(),
+  generateSlug: z.boolean().optional(),
 });
 
 export async function GET(_req: Request, { params }: { params: Promise<{ projectId: string }> }) {
@@ -53,9 +55,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ proj
     return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 });
   }
 
+  const { generateSlug, ...rest } = parsed.data;
+  const dataToUpdate: Record<string, unknown> = { ...rest };
+
+  if (generateSlug && !project.publicSlug) {
+    dataToUpdate.publicSlug = generateProjectSlug(project.name, project.id);
+  }
+
   const updated = await prisma.project.update({
     where: { id: projectId },
-    data: parsed.data,
+    data: dataToUpdate,
   });
 
   return NextResponse.json({ data: updated });

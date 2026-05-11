@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { RoadmapColumns } from "@/components/projects/RoadmapColumns";
 import { ProjectHeader } from "@/components/projects/ProjectHeader";
+import { ShareRoadmapButton } from "@/components/projects/ShareRoadmapButton";
 import { ArrowLeft } from "lucide-react";
 
 export default async function RoadmapDetailPage({
@@ -38,13 +39,16 @@ export default async function RoadmapDetailPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link
-          href="/roadmaps"
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-2"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          All Roadmaps
-        </Link>
+        <div className="flex items-center justify-between mb-2">
+          <Link
+            href="/roadmaps"
+            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            All Roadmaps
+          </Link>
+          <ShareRoadmapButton projectId={projectId} publicSlug={project.publicSlug ?? null} />
+        </div>
         <ProjectHeader
           projectId={projectId}
           name={project.name}
