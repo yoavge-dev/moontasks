@@ -10,6 +10,7 @@ const updateSchema = z.object({
   phase: z.string().max(100).optional(),
   status: z.enum(["planned", "in_progress", "done"]).optional(),
   order: z.number().int().optional(),
+  jiraUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export async function PUT(

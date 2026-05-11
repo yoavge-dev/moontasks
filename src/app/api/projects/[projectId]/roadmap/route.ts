@@ -10,6 +10,7 @@ const createSchema = z.object({
   phase: z.string().max(100).optional(),
   status: z.enum(["planned", "in_progress", "done"]).default("planned"),
   order: z.number().int().default(0),
+  jiraUrl: z.string().url().optional().or(z.literal("")),
 });
 
 export async function GET(_req: Request, { params }: { params: Promise<{ projectId: string }> }) {

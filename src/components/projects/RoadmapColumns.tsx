@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, CheckCircle2, Circle, Clock } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, Circle, Clock, Link2 } from "lucide-react";
 
 interface RoadmapItem {
   id: string;
@@ -23,6 +23,7 @@ interface RoadmapItem {
   phase: string | null;
   status: string;
   order: number;
+  jiraUrl: string | null;
 }
 
 interface Props {
@@ -74,6 +75,7 @@ function AddItemForm({ defaultPhase, projectId, onAdd, onCancel }: AddItemFormPr
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState("planned");
+  const [jiraUrl, setJiraUrl] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleAdd = async () => {
@@ -82,7 +84,7 @@ function AddItemForm({ defaultPhase, projectId, onAdd, onCancel }: AddItemFormPr
     const res = await fetch(`/api/projects/${projectId}/roadmap`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description: description || undefined, phase: defaultPhase, status }),
+      body: JSON.stringify({ title, description: description || undefined, phase: defaultPhase, status, jiraUrl: jiraUrl || undefined }),
     });
     const json = await res.json();
     setSaving(false);
@@ -119,6 +121,15 @@ function AddItemForm({ defaultPhase, projectId, onAdd, onCancel }: AddItemFormPr
           </SelectContent>
         </Select>
       </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Jira link (optional)</Label>
+        <Input
+          value={jiraUrl}
+          onChange={(e) => setJiraUrl(e.target.value)}
+          placeholder="https://your-org.atlassian.net/browse/…"
+          className="text-xs h-8"
+        />
+      </div>
       <div className="flex gap-2 pt-1">
         <Button size="sm" className="h-7 text-xs" onClick={handleAdd} disabled={saving}>
           {saving ? "Adding…" : "Add"}
@@ -142,6 +153,7 @@ function EditItemForm({ item, projectId, quarters, onSave, onCancel }: EditItemF
   const [description, setDescription] = useState(item.description ?? "");
   const [phase, setPhase] = useState(item.phase ?? "Backlog");
   const [status, setStatus] = useState(item.status);
+  const [jiraUrl, setJiraUrl] = useState(item.jiraUrl ?? "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -150,7 +162,7 @@ function EditItemForm({ item, projectId, quarters, onSave, onCancel }: EditItemF
     const res = await fetch(`/api/projects/${projectId}/roadmap/${item.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, description: description || undefined, phase, status }),
+      body: JSON.stringify({ title, description: description || undefined, phase, status, jiraUrl: jiraUrl || undefined }),
     });
     const json = await res.json();
     setSaving(false);
@@ -190,6 +202,15 @@ function EditItemForm({ item, projectId, quarters, onSave, onCancel }: EditItemF
             </SelectContent>
           </Select>
         </div>
+      </div>
+      <div className="space-y-1">
+        <Label className="text-xs">Jira link (optional)</Label>
+        <Input
+          value={jiraUrl}
+          onChange={(e) => setJiraUrl(e.target.value)}
+          placeholder="https://your-org.atlassian.net/browse/…"
+          className="text-xs h-8"
+        />
       </div>
       <div className="flex gap-2 pt-1">
         <Button size="sm" className="h-7 text-xs" onClick={handleSave} disabled={saving}>
@@ -352,9 +373,23 @@ export function RoadmapColumns({ projectId, initialItems, isOwner }: Props) {
                       )}
 
                       <div className="flex items-center justify-between pl-5">
-                        <Badge className={`text-[10px] border-0 px-1.5 py-0 h-4 ${sc.badge}`}>
-                          {sc.label}
-                        </Badge>
+                        <div className="flex items-center gap-1.5">
+                          <Badge className={`text-[10px] border-0 px-1.5 py-0 h-4 ${sc.badge}`}>
+                            {sc.label}
+                          </Badge>
+                          {item.jiraUrl && (
+                            <a
+                              href={item.jiraUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-blue-500 hover:text-blue-600 transition-colors"
+                              title="Open Jira ticket"
+                            >
+                              <Link2 className="h-3 w-3" />
+                            </a>
+                          )}
+                        </div>
                         {isOwner && (
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button

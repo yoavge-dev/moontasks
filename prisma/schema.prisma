@@ -231,6 +231,7 @@ model RoadmapItem {
   phase       String?
   status      String   @default("planned")
   order       Int      @default(0)
+  jiraUrl     String?
   projectId   String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
