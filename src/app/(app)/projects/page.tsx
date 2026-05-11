@@ -7,6 +7,7 @@ import { LinkButton } from "@/components/ui/link-button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, FolderKanban, CheckSquare, FlaskConical, MapPin, UserCog } from "lucide-react";
 import { ProjectUrlLink } from "@/components/projects/ProjectUrlLink";
+import { DeleteProjectButton } from "@/components/projects/DeleteProjectButton";
 import { format } from "date-fns";
 
 export default async function ProjectsPage() {
@@ -59,7 +60,7 @@ export default async function ProjectsPage() {
               <Card className="h-full hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer border-t-2 border-t-violet-400 group">
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <p className="font-semibold text-sm group-hover:text-primary transition-colors truncate">
                         {project.name}
                       </p>
@@ -77,8 +78,13 @@ export default async function ProjectsPage() {
                         </div>
                       )}
                     </div>
-                    <div className="h-8 w-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-                      <FolderKanban className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                    <div className="flex items-center gap-1 shrink-0">
+                      {project.ownerId === userId && (
+                        <DeleteProjectButton projectId={project.id} projectName={project.name} />
+                      )}
+                      <div className="h-8 w-8 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
+                        <FolderKanban className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                      </div>
                     </div>
                   </div>
 
