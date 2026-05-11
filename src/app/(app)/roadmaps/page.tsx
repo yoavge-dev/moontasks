@@ -1,9 +1,9 @@
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { Map, ArrowRight } from "lucide-react";
+import { Map } from "lucide-react";
+import { RoadmapGrid } from "@/components/projects/RoadmapGrid";
 
 export default async function RoadmapsPage() {
   const session = await getServerSession(authOptions);
@@ -15,12 +15,18 @@ export default async function RoadmapsPage() {
 
   const projects = await prisma.project.findMany({
     where: { OR: [{ ownerId: userId }, { teamId: { in: teamIds } }] },
-    include: {
-      team: { select: { id: true, name: true } },
-      _count: { select: { roadmapItems: true } },
-    },
+    include: { _count: { select: { roadmapItems: true } } },
     orderBy: { name: "asc" },
   });
+
+  const gridProjects = projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    logoUrl: p.logoUrl ?? null,
+    publicSlug: p.publicSlug ?? null,
+    isOwner: p.ownerId === userId,
+    itemCount: p._count.roadmapItems,
+  }));
 
   return (
     <div className="space-y-6">
@@ -40,27 +46,7 @@ export default async function RoadmapsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => (
-            <Link key={project.id} href={`/roadmaps/${project.id}`}>
-              <div className="group flex items-center gap-4 p-4 rounded-xl border border-border bg-card hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
-                  <Map className="h-5 w-5 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm group-hover:text-primary transition-colors truncate">
-                    {project.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {project._count.roadmapItems} item{project._count.roadmapItems !== 1 ? "s" : ""}
-                    {project.team && ` · ${project.team.name}`}
-                  </p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground/50 group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0" />
-              </div>
-            </Link>
-          ))}
-        </div>
+        <RoadmapGrid projects={gridProjects} />
       )}
     </div>
   );

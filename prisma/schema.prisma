@@ -213,6 +213,7 @@ model Project {
   url         String?
   ppcOwner    String?
   publicSlug  String?  @unique
+  logoUrl     String?
   ownerId     String
   teamId      String?
   createdAt   DateTime @default(now())
