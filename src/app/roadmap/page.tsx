@@ -14,10 +14,15 @@ const GRADIENTS = [
   "from-cyan-500 to-sky-600",
   "from-fuchsia-500 to-pink-600",
   "from-lime-500 to-green-600",
+  "from-sky-400 to-blue-500",
+  "from-orange-400 to-red-500",
+  "from-teal-400 to-emerald-600",
+  "from-purple-400 to-violet-600",
 ];
 
 function projectGradient(name: string) {
-  return GRADIENTS[name.charCodeAt(0) % GRADIENTS.length];
+  const hash = name.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return GRADIENTS[hash % GRADIENTS.length];
 }
 
 export default async function PublicRoadmapsPage() {
@@ -51,16 +56,16 @@ export default async function PublicRoadmapsPage() {
               return (
                 <Link key={project.id} href={`/roadmap/${project.publicSlug}`}>
                   <div className="group rounded-2xl overflow-hidden border border-border bg-card hover:shadow-lg hover:-translate-y-1 transition-all duration-200">
-                    <div className={cn("relative aspect-square w-full", !project.logoUrl && `bg-gradient-to-br ${gradient}`)}>
+                    <div className={cn("relative h-28 w-full", !project.logoUrl && `bg-gradient-to-br ${gradient}`)}>
                       {project.logoUrl ? (
                         <img src={project.logoUrl} alt={project.name} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <span className="text-4xl font-black text-white/90 tracking-tight select-none">{initials}</span>
+                          <span className="text-2xl font-black text-white/90 tracking-tight select-none">{initials}</span>
                         </div>
                       )}
                     </div>
-                    <div className="px-3.5 py-3 space-y-0.5">
+                    <div className="px-3 py-2.5 space-y-0.5">
                       <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{project.name}</p>
                       <p className="text-xs text-muted-foreground">
                         {project._count.roadmapItems} item{project._count.roadmapItems !== 1 ? "s" : ""}
