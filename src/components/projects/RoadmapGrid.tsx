@@ -11,6 +11,7 @@ interface Project {
   isOwner: boolean;
   pmOwner: string | null;
   ppcOwner: string | null;
+  isLoggedIn?: boolean;
 }
 
 const GRADIENTS = [
@@ -36,9 +37,14 @@ function projectGradient(name: string) {
 function ProjectCard({ project }: { project: Project }) {
   const gradient = projectGradient(project.name);
   const initials = project.name.split(/\s+/).slice(0, 2).map((w) => w[0]).join("").toUpperCase();
+  const href = project.isLoggedIn !== false
+    ? `/roadmaps/${project.id}`
+    : project.publicSlug ? `/roadmap/${project.publicSlug}` : null;
+
+  if (!href) return null;
 
   return (
-    <Link href={`/roadmaps/${project.id}`}>
+    <Link href={href}>
       <div className="group rounded-2xl overflow-hidden border border-border bg-card hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer">
         {/* Logo area */}
         <div className={cn("relative h-28 w-full", !project.logoUrl && `bg-gradient-to-br ${gradient}`)}>
