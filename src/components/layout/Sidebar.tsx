@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen, CalendarCheck, ScanSearch, PenLine, LayoutTemplate } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen, CalendarCheck, ScanSearch, PenLine, LayoutTemplate, MessageSquarePlus, BarChart2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -89,6 +89,21 @@ export function Sidebar() {
         <Link href="/sections" className={linkClass("/sections")}>
           <LayoutTemplate className="h-4 w-4 shrink-0" />
           Section Library
+        </Link>
+
+        <div className="pt-4 pb-1.5 px-3">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/30">
+            Feedback
+          </p>
+        </div>
+
+        <Link href="/cms-feedback" className={linkClass("/cms-feedback", true)}>
+          <MessageSquarePlus className="h-4 w-4 shrink-0" />
+          Submit Feedback
+        </Link>
+        <Link href="/cms-feedback/admin" className={linkClass("/cms-feedback/admin")}>
+          <BarChart2 className="h-4 w-4 shrink-0" />
+          Feedback Dashboard
         </Link>
       </nav>
     </aside>

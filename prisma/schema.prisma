@@ -32,6 +32,7 @@ model User {
   libraryWidgets      LibraryWidget[]
   annotatedFeatures   AnnotatedFeature[]
   sectionLibraryItems SectionLibraryItem[]
+  cmsFeedback         CmsFeedback[]
 }
 
 model Competitor {
@@ -357,4 +358,19 @@ model SectionLibraryItem {
   createdBy     User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
   @@index([createdById])
+}
+
+model CmsFeedback {
+  id          String   @id @default(cuid())
+  authorId    String
+  category    String
+  severity    Int
+  description String
+  suggestion  String?
+  createdAt   DateTime @default(now())
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([authorId])
+  @@index([category])
 }
