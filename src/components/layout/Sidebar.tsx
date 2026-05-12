@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen, CalendarCheck, ScanSearch, PenLine } from "lucide-react";
+import { LayoutDashboard, CheckSquare, Users, FlaskConical, FolderKanban, Map, ClipboardList, Radar, BookOpen, CalendarCheck, ScanSearch, PenLine, LayoutTemplate } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -85,6 +85,10 @@ export function Sidebar() {
         <Link href="/annotator" className={linkClass("/annotator")}>
           <PenLine className="h-4 w-4 shrink-0" />
           Spec Annotator
+        </Link>
+        <Link href="/sections" className={linkClass("/sections")}>
+          <LayoutTemplate className="h-4 w-4 shrink-0" />
+          Section Library
         </Link>
       </nav>
     </aside>

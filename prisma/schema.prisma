@@ -31,6 +31,7 @@ model User {
   competitors         Competitor[]
   libraryWidgets      LibraryWidget[]
   annotatedFeatures   AnnotatedFeature[]
+  sectionLibraryItems SectionLibraryItem[]
 }
 
 model Competitor {
@@ -344,4 +345,16 @@ model TeamInvite {
   invitedBy User @relation(fields: [invitedById], references: [id], onDelete: Cascade)
 
   @@index([teamId])
+}
+
+model SectionLibraryItem {
+  id            String   @id @default(cuid())
+  name          String
+  screenshotUrl String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
 }
