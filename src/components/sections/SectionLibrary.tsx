@@ -32,7 +32,8 @@ export function SectionLibrary({ initialItems }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => {
-    if (!f.type.startsWith("image/")) return;
+    const isImage = f.type.startsWith("image/") || /\.(png|jpe?g|gif|webp|heic|heif|bmp|svg|tiff?)$/i.test(f.name);
+    if (!isImage) { toast.error("Please select an image file"); return; }
     setFile(f);
     setPreview(URL.createObjectURL(f));
   };
@@ -128,7 +129,7 @@ export function SectionLibrary({ initialItems }: Props) {
             onDrop={(e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
             onClick={() => fileRef.current?.click()}
           >
-            <input ref={fileRef} type="file" accept="image/*" className="hidden"
+            <input ref={fileRef} type="file" className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
             {preview ? (
               <img src={preview} alt="preview" className="w-full max-h-64 object-contain rounded-xl" />

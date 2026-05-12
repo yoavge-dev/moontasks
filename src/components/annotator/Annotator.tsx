@@ -279,7 +279,7 @@ export function Annotator({ featureId, initialName = "", initialScreenshotUrl, i
           onDragLeave={() => setIsDragging(false)}
           onDrop={(e) => { e.preventDefault(); setIsDragging(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
         >
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden"
+          <input ref={fileInputRef} type="file" className="hidden"
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
           {imageUrl ? (
             <div className="flex items-center gap-2.5">
